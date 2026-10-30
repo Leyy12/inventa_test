@@ -4,52 +4,72 @@
 
 const CATEGORY_EMOJI = {
   'Beverages':    '🥤',
+  'Beverage':     '🥤',
+  'Drinks':       '🥤',
   'Food':         '🍱',
   'Snacks':       '🍿',
   'Household':    '🧹',
   'Personal Care':'🧴',
+  'Hardware':     '🔧',
+  'Construction': '🧱',
+  'Pharmacy':     '💊',
+  'Medicine':     '💊',
+  'Electronics':  '🔌',
   'Other':        '📦',
 };
 
 let cart = [];
-let _lastTxn = null;
+let _checkingOut = false;
 
 // ── Load ───────────────────────────────────────────────────
 function loadCashier() {
-  cart = [];
   renderPosTiles();
   renderCart();
 }
 
+const sellable = p => p.price > 0;
+
 // ── Product Tiles ──────────────────────────────────────────
 function renderPosTiles() {
-  const q      = (document.getElementById('pos-search')?.value || '').toLowerCase();
-  const grid   = document.getElementById('pos-tiles');
+  const q    = (document.getElementById('pos-search')?.value || '').toLowerCase();
+  const grid = document.getElementById('pos-tiles');
   if (!grid) return;
 
-  const list = State.products.filter(p =>
-    p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
-  );
-
-  if (list.length === 0) {
-    grid.innerHTML = '<div style="color:var(--text-xs); font-size:13px; padding:20px; grid-column:1/-1;">No products found.</div>';
+  if (State.products.length === 0) {
+    grid.innerHTML = `<div class="grid-empty">No products yet.<br>Go to <a href="#products">Products</a> and press <b>Sync from API</b>.</div>`;
     return;
   }
 
-  grid.innerHTML = list.map(p => `
-    <div class="product-tile ${p.stock === 0 ? 'oos' : ''}" onclick="addToCart('${p.id}')">
-      <div class="tile-emoji">${CATEGORY_EMOJI[p.category] || '📦'}</div>
-      <div class="tile-name">${p.name}</div>
-      <div class="tile-price">${peso(p.price)}</div>
-      <div class="tile-stock">${p.stock === 0 ? 'Out of stock' : p.stock + ' left'}</div>
-    </div>
-  `).join('');
+  const list = State.products.filter(p =>
+    [p.name, p.variant, p.sku, p.category].join(' ').toLowerCase().includes(q)
+  );
+
+  if (list.length === 0) {
+    grid.innerHTML = '<div class="grid-empty">No products found.</div>';
+    return;
+  }
+
+  grid.innerHTML = list.map(p => {
+    const disabled = p.stock === 0 || !sellable(p);
+    const note = !sellable(p) ? 'Set a price' : p.stock === 0 ? 'Out of stock' : p.stock + ' left';
+    const visual = p.image_url
+      ? `<img class="tile-img" src="${esc(p.image_url)}" alt="" loading="lazy" onerror="this.replaceWith(Object.assign(document.createElement('div'),{className:'tile-emoji',textContent:'📦'}))">`
+      : `<div class="tile-emoji">${CATEGORY_EMOJI[p.category] || '📦'}</div>`;
+    return `
+      <div class="product-tile ${disabled ? 'oos' : ''}" data-id="${esc(p.id)}" onclick="addToCart(this.dataset.id)">
+        ${visual}
+        <div class="tile-name">${esc(p.name)}</div>
+        ${p.variant ? `<div class="tile-variant">${esc(p.variant)}</div>` : ''}
+        <div class="tile-price">${sellable(p) ? peso(p.price) : '—'}</div>
+        <div class="tile-stock">${note}</div>
+      </div>`;
+  }).join('');
 }
 
 // ── Cart Actions ───────────────────────────────────────────
 function addToCart(id) {
   const product = State.products.find(p => p.id === id);
-  if (!product || product.stock === 0) return;
+  if (!product || product.stock === 0 || !sellable(product)) return;
 
   const existing = cart.find(c => c.id === id);
   if (existing) {
@@ -59,7 +79,7 @@ function addToCart(id) {
     }
     existing.qty++;
   } else {
-    cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 });
+    cart.push({ id: product.id, qty: 1 });
   }
   renderCart();
 }
@@ -94,35 +114,43 @@ function clearCart() {
   renderCart();
 }
 
+// Cart lines joined with current product data (name, price).
+function cartLines() {
+  return cart
+    .map(c => ({ ...c, product: State.products.find(p => p.id === c.id) }))
+    .filter(c => c.product);
+}
+
 // ── Render Cart ────────────────────────────────────────────
 function renderCart() {
   const container = document.getElementById('cart-items');
   const countEl   = document.getElementById('cart-count');
   if (!container) return;
 
-  const totalQty = cart.reduce((s, i) => s + i.qty, 0);
-  if (countEl) countEl.textContent = totalQty;
+  cart = cart.filter(c => State.products.some(p => p.id === c.id));
+  const lines = cartLines();
+  if (countEl) countEl.textContent = lines.reduce((s, i) => s + i.qty, 0);
 
-  if (cart.length === 0) {
+  if (lines.length === 0) {
     container.innerHTML = `
       <div class="cart-empty">
         <div class="cart-empty-icon">🛒</div>
         Cart is empty.<br>Click a product to add.
       </div>`;
   } else {
-    container.innerHTML = cart.map(item => `
-      <div class="cart-item">
+    container.innerHTML = lines.map(({ id, qty, product: p }) => `
+      <div class="cart-item" data-id="${esc(id)}">
         <div class="cart-item-info">
-          <div class="cart-item-name">${item.name}</div>
-          <div class="cart-item-unit">${peso(item.price)} each</div>
+          <div class="cart-item-name">${esc(productLabel(p))}</div>
+          <div class="cart-item-unit">${peso(p.price)} each</div>
         </div>
         <div class="qty-ctrl">
-          <button class="qty-btn" onclick="changeQty('${item.id}', -1)">−</button>
-          <span class="qty-num">${item.qty}</span>
-          <button class="qty-btn" onclick="changeQty('${item.id}', 1)">＋</button>
+          <button class="qty-btn" onclick="changeQty(this.closest('.cart-item').dataset.id, -1)">−</button>
+          <span class="qty-num">${qty}</span>
+          <button class="qty-btn" onclick="changeQty(this.closest('.cart-item').dataset.id, 1)">＋</button>
         </div>
-        <div class="cart-item-subtotal">${peso(item.price * item.qty)}</div>
-        <button class="remove-btn" onclick="removeFromCart('${item.id}')">✕</button>
+        <div class="cart-item-subtotal">${peso(p.price * qty)}</div>
+        <button class="remove-btn" onclick="removeFromCart(this.closest('.cart-item').dataset.id)">✕</button>
       </div>
     `).join('');
   }
@@ -132,8 +160,8 @@ function renderCart() {
 
 // ── Totals ─────────────────────────────────────────────────
 function renderTotals() {
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const discount = Math.max(0, parseFloat(document.getElementById('discount-input')?.value) || 0);
+  const subtotal = cartLines().reduce((s, i) => s + i.product.price * i.qty, 0);
+  const discount = Math.min(subtotal, Math.max(0, parseFloat(document.getElementById('discount-input')?.value) || 0));
   const cash     = Math.max(0, parseFloat(document.getElementById('cash-input')?.value) || 0);
   const total    = Math.max(0, subtotal - discount);
   const change   = cash >= total ? cash - total : 0;
@@ -146,10 +174,11 @@ function renderTotals() {
 }
 
 // ── Checkout ───────────────────────────────────────────────
-function checkout() {
+async function checkout() {
+  if (_checkingOut) return;
   if (cart.length === 0) { showToast('Cart is empty!', 'error'); return; }
 
-  const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const subtotal = cartLines().reduce((s, i) => s + i.product.price * i.qty, 0);
   const discount = Math.max(0, parseFloat(document.getElementById('discount-input').value) || 0);
   const cash     = parseFloat(document.getElementById('cash-input').value) || 0;
   const total    = Math.max(0, subtotal - discount);
@@ -159,51 +188,38 @@ function checkout() {
     return;
   }
 
-  // Deduct stock
-  cart.forEach(item => {
-    const p = State.products.find(x => x.id === item.id);
-    if (p) State.updateProduct(p.id, { stock: Math.max(0, p.stock - item.qty) });
-  });
-
-  const txn = {
-    id:       genId(),
-    ts:       Date.now(),
-    items:    cart.map(i => ({ ...i })),
-    subtotal,
-    discount,
-    total,
-    cash:     cash || total,
-    change:   Math.max(0, cash - total),
-    status:   'Paid',
-  };
-
-  State.addTransaction(txn);
-  _lastTxn = txn;
-
-  showReceipt(txn);
-
-  cart = [];
-  document.getElementById('discount-input').value = '';
-  document.getElementById('cash-input').value = '';
-  renderCart();
-  renderPosTiles();
+  _checkingOut = true;
+  const btn = document.getElementById('checkout-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; }
+  try {
+    const txn = await State.checkout(cart.map(({ id, qty }) => ({ id, qty })), discount, cash);
+    showReceipt(txn);
+    clearCart();
+    renderPosTiles();
+  } catch (err) {
+    showToast(err.message, 'error');
+    // Stock may have changed elsewhere; show the latest numbers.
+    try { State.products = (await api('products')).products; renderPosTiles(); renderCart(); } catch { /* ignore */ }
+  } finally {
+    _checkingOut = false;
+    if (btn) { btn.disabled = false; btn.innerHTML = '💳 &nbsp; Checkout'; }
+  }
 }
 
 // ── Receipt ────────────────────────────────────────────────
 function showReceipt(txn) {
-  const num = State.transactions.length;
   document.getElementById('receipt-content').innerHTML = `
     <div class="receipt-store">🛒 QuickPOS</div>
     <div class="receipt-sub">Official Receipt</div>
     <hr class="receipt-divider">
     <div class="receipt-meta">
-      <div>Receipt #: ${num.toString().padStart(4,'0')}</div>
-      <div>Date: ${formatDate(txn.ts)}</div>
+      <div>Receipt: ${receiptNo(txn)}</div>
+      <div>Date: ${formatDate(txn.created_at)}</div>
     </div>
     <hr class="receipt-divider">
     ${txn.items.map(i => `
       <div class="receipt-line">
-        <span>${i.name} ×${i.qty}</span>
+        <span>${esc(i.name)} ×${i.qty}</span>
         <span>${peso(i.price * i.qty)}</span>
       </div>
     `).join('')}
@@ -227,9 +243,10 @@ function closeReceiptModal() {
 function printReceipt() {
   const html = document.getElementById('receipt-content').innerHTML;
   const win  = window.open('', '_blank', 'width=320,height=560');
+  if (!win) { showToast('Allow pop-ups to print receipts.', 'error'); return; }
   win.document.write(`
     <html>
-      <head><style>
+      <head><title>Receipt</title><style>
         body { font-family: 'Courier New', monospace; font-size:12px; padding:16px; line-height:1.7; }
         .receipt-store { text-align:center; font-size:16px; font-weight:800; }
         .receipt-sub, .receipt-thanks { text-align:center; font-size:11px; color:#666; }

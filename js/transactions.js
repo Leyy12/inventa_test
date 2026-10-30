@@ -28,10 +28,10 @@ function filterTransactions() {
 function renderTransactionTable() {
   const q = (document.getElementById('txn-search')?.value || '').toLowerCase();
 
-  const list = [...State.transactions]
-    .reverse()
+  const list = State.transactions
     .filter(t =>
-      formatDate(t.ts).toLowerCase().includes(q) ||
+      receiptNo(t).includes(q) ||
+      formatDate(t.created_at).toLowerCase().includes(q) ||
       t.items.some(i => i.name.toLowerCase().includes(q)) ||
       peso(t.total).includes(q)
     );
@@ -47,14 +47,13 @@ function renderTransactionTable() {
     return;
   }
 
-  tbody.innerHTML = list.map((t, i) => {
-    const num = State.transactions.length - i;
+  tbody.innerHTML = list.map(t => {
     return `
       <tr>
-        <td><b>#${num.toString().padStart(4,'0')}</b></td>
-        <td style="white-space:nowrap;">${formatDate(t.ts)}</td>
+        <td><b>${receiptNo(t)}</b></td>
+        <td style="white-space:nowrap;">${formatDate(t.created_at)}</td>
         <td style="font-size:12px; color:var(--text-sm); max-width:220px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
-          ${t.items.map(x => x.name + ' ×' + x.qty).join(', ')}
+          ${esc(t.items.map(x => x.name + ' ×' + x.qty).join(', '))}
         </td>
         <td>${peso(t.subtotal)}</td>
         <td>${t.discount > 0 ? '<span style="color:var(--warning); font-weight:600;">-' + peso(t.discount) + '</span>' : '—'}</td>
@@ -63,7 +62,7 @@ function renderTransactionTable() {
         <td>${peso(t.change)}</td>
         <td>
           <span class="badge ${t.status === 'Paid' ? 'badge-success' : 'badge-danger'}">
-            ${t.status}
+            ${esc(t.status)}
           </span>
         </td>
       </tr>
@@ -78,11 +77,12 @@ function exportCSV() {
     return;
   }
 
-  const headers = ['#','Date','Items','Subtotal','Discount','Total','Cash','Change','Status'];
-  const rows = [...State.transactions].reverse().map((t, i) => [
-    i + 1,
-    '"' + formatDate(t.ts) + '"',
-    '"' + t.items.map(x => x.name + ' x' + x.qty).join(', ') + '"',
+  const headers = ['Receipt','Date','Items','Subtotal','Discount','Total','Cash','Change','Status'];
+  const csvCell = v => '"' + String(v).replace(/"/g, '""') + '"';
+  const rows = State.transactions.map(t => [
+    receiptNo(t),
+    csvCell(formatDate(t.created_at)),
+    csvCell(t.items.map(x => x.name + ' x' + x.qty).join(', ')),
     t.subtotal.toFixed(2),
     t.discount.toFixed(2),
     t.total.toFixed(2),

@@ -1,0 +1,13 @@
+{
+  "name": "inventa-test-pos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "QuickPOS: a point-of-sale app for testing InventaAPI (inventaapi.shop) API keys, with Supabase storage and Vercel hosting.",
+  "type": "module",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "dev": "node dev-server.js",
+    "start": "node dev-server.js",
+    "test": "node --test tests/*.test.js"
+  }
+}

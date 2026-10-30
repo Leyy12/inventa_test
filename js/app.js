@@ -1,34 +1,84 @@
 /* ============================================================
-   APP.JS  –  Shared state, utilities, and router
+   APP.JS  –  Shared state, API client, utilities, and router
+   Data comes from the POS server (/api/*), which reads products
+   from InventaAPI and keeps prices, stock and sales in Supabase.
    ============================================================ */
+
+// ── API client ─────────────────────────────────────────────
+// A key pasted on the API Key page is kept for this browser tab only and
+// is used when the server has no INVENTA_API_KEY in its .env.
+const PASTED_KEY = 'inventa_pasted_key';
+
+function pastedKey() {
+  try { return sessionStorage.getItem(PASTED_KEY) || ''; } catch { return ''; }
+}
+function setPastedKey(key) {
+  try { key ? sessionStorage.setItem(PASTED_KEY, key) : sessionStorage.removeItem(PASTED_KEY); } catch { /* private mode */ }
+}
+
+async function api(path, { method = 'GET', body } = {}) {
+  const headers = { Accept: 'application/json' };
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const key = pastedKey();
+  if (key) headers['x-inventa-key'] = key;
+
+  let res;
+  try {
+    res = await fetch('/api/' + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+  } catch {
+    throw Object.assign(new Error('Cannot reach the POS server. Is `npm run dev` running?'), { data: {} });
+  }
+  let data = {};
+  try { data = await res.json(); } catch { /* empty */ }
+  if (!res.ok) throw Object.assign(new Error(data.error || `Request failed (${res.status}).`), { status: res.status, data });
+  return data;
+}
 
 // ── State ──────────────────────────────────────────────────
 const State = {
-  products:     JSON.parse(localStorage.getItem('pos_products')     || '[]'),
-  transactions: JSON.parse(localStorage.getItem('pos_transactions') || '[]'),
+  status: null,
+  products: [],
+  transactions: [],
+  loaded: false,
 
-  save() {
-    localStorage.setItem('pos_products',     JSON.stringify(this.products));
-    localStorage.setItem('pos_transactions', JSON.stringify(this.transactions));
+  async refresh() {
+    const [status, p, t] = await Promise.all([api('status'), api('products'), api('transactions')]);
+    this.status = status;
+    this.products = p.products;
+    this.transactions = t.transactions;   // newest first
+    this.loaded = true;
+    renderConnection();
   },
 
-  addProduct(p)       { this.products.push(p);              this.save(); },
-  updateProduct(id, data) {
+  async sync() {
+    const result = await api('sync', { method: 'POST' });
+    await this.refresh();
+    return result;
+  },
+
+  async updateProduct(id, data) {
+    const { product } = await api('products', { method: 'PATCH', body: { id, ...data } });
     const i = this.products.findIndex(x => x.id === id);
-    if (i > -1) { this.products[i] = { ...this.products[i], ...data }; this.save(); }
+    if (i > -1) this.products[i] = product;
+    return product;
   },
-  deleteProduct(id)   { this.products = this.products.filter(x => x.id !== id); this.save(); },
 
-  addTransaction(t)   { this.transactions.push(t); this.save(); },
+  async checkout(items, discount, cash) {
+    const { transaction } = await api('checkout', { method: 'POST', body: { items, discount, cash } });
+    this.transactions.unshift(transaction);
+    const p = await api('products');
+    this.products = p.products;
+    return transaction;
+  },
 };
 
 // ── Utilities ──────────────────────────────────────────────
-function genId() {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+function esc(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
 function peso(n) {
-  return '₱' + Number(n).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return '₱' + Number(n || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
 function formatDate(ts) {
@@ -37,48 +87,66 @@ function formatDate(ts) {
     + ' ' + d.toLocaleTimeString('en-PH', { hour: '2-digit', minute: '2-digit' });
 }
 
+function receiptNo(t) {
+  return '#' + String(t.id).padStart(4, '0');
+}
+
+function productLabel(p) {
+  return p.variant ? `${p.name} – ${p.variant}` : p.name;
+}
+
 function showToast(msg, type = '') {
   const t = document.getElementById('toast');
   t.textContent = msg;
   t.className = 'show' + (type ? ' toast-' + type : '');
   clearTimeout(t._timer);
-  t._timer = setTimeout(() => { t.className = ''; }, 2800);
+  t._timer = setTimeout(() => { t.className = ''; }, 3200);
+}
+
+// Connection badge in the top bar
+function renderConnection() {
+  const el = document.getElementById('conn-status');
+  if (!el || !State.status) return;
+  const s = State.status;
+  const keyText = s.envKeySet ? `Key ${s.envKeyHint} (.env)` : pastedKey() ? 'Pasted key (this tab)' : 'No API key';
+  const storeText = s.storage === 'supabase' ? 'Supabase' : 'Local file';
+  const ok = s.envKeySet || pastedKey();
+  el.className = 'store-status' + (ok ? '' : ' warn');
+  el.innerHTML = `<span class="status-dot"></span><span>${esc(keyText)} · ${esc(storeText)}</span>`;
+  el.title = `InventaAPI: ${s.inventaUrl}`;
 }
 
 // ── Router ─────────────────────────────────────────────────
 const PAGES = {
-  dashboard:    { title: 'Dashboard',    loader: loadDashboard    },
-  cashier:      { title: 'Cashier',      loader: loadCashier      },
-  products:     { title: 'Products',     loader: loadProducts      },
-  transactions: { title: 'Transactions', loader: loadTransactions  },
+  dashboard:    { title: 'Dashboard',       loader: () => loadDashboard()    },
+  cashier:      { title: 'Cashier',         loader: () => loadCashier()      },
+  products:     { title: 'Products',        loader: () => loadProducts()     },
+  transactions: { title: 'Transactions',    loader: () => loadTransactions() },
+  apikey:       { title: 'API Key Tester',  loader: () => loadApiKey()       },
 };
 
-function navigate(page) {
-  if (!PAGES[page]) page = 'dashboard';
+let _currentPage = null;
 
-  // Highlight active nav item
+async function navigate(page) {
+  if (!PAGES[page]) page = 'dashboard';
+  _currentPage = page;
+  if (location.hash !== '#' + page) history.replaceState(null, '', '#' + page);
+
   document.querySelectorAll('.nav-item').forEach(el => {
     el.classList.toggle('active', el.dataset.page === page);
   });
-
-  // Update topbar title
   document.getElementById('page-title').textContent = PAGES[page].title;
 
-  // Load page HTML then call loader
-  fetch('pages/' + page + '.html')
-    .then(r => r.text())
-    .then(html => {
-      document.getElementById('page-content').innerHTML = html;
-      PAGES[page].loader();
-    });
+  const html = await fetch('pages/' + page + '.html').then(r => r.text());
+  if (_currentPage !== page) return;   // user clicked elsewhere meanwhile
+  document.getElementById('page-content').innerHTML = html;
+  PAGES[page].loader();
 }
 
-// Sidebar collapse toggle
 document.getElementById('sidebar-toggle').addEventListener('click', () => {
   document.getElementById('sidebar').classList.toggle('collapsed');
 });
 
-// Nav clicks (hash-based)
 document.querySelectorAll('.nav-item').forEach(el => {
   el.addEventListener('click', e => {
     e.preventDefault();
@@ -86,20 +154,17 @@ document.querySelectorAll('.nav-item').forEach(el => {
   });
 });
 
-// Hash routing
 window.addEventListener('hashchange', () => {
   const hash = location.hash.replace('#', '') || 'dashboard';
-  navigate(hash);
+  if (hash !== _currentPage) navigate(hash);
 });
 
-// Keyboard shortcut: Escape closes any open modal
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
     document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
   }
 });
 
-// Click-outside to close modal
 document.addEventListener('click', e => {
   if (e.target.classList.contains('modal-overlay')) {
     e.target.classList.remove('open');
@@ -107,28 +172,17 @@ document.addEventListener('click', e => {
 });
 
 // ── Init ───────────────────────────────────────────────────
-(function init() {
-  // Topbar date
+(async function init() {
   document.getElementById('topbar-date').textContent = new Date().toLocaleDateString('en-PH', {
     weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
   });
 
-  // Seed sample products if empty
-  if (State.products.length === 0) {
-    const samples = [
-      { name: 'Coca-Cola 1.5L',        category: 'Beverages',     price: 65,  stock: 50, threshold: 10 },
-      { name: 'Sprite 1.5L',            category: 'Beverages',     price: 60,  stock: 40, threshold: 10 },
-      { name: 'Lucky Me Pancit Canton', category: 'Food',          price: 15,  stock: 100,threshold: 20 },
-      { name: 'Nissin Cup Noodles',     category: 'Food',          price: 25,  stock: 60, threshold: 15 },
-      { name: 'Nova Country Cheddar',   category: 'Snacks',        price: 30,  stock: 45, threshold: 10 },
-      { name: 'Chippy Barbecue',        category: 'Snacks',        price: 20,  stock: 55, threshold: 10 },
-      { name: 'Ariel Powder 66g',       category: 'Household',     price: 12,  stock: 30, threshold: 8  },
-      { name: 'Safeguard Bar Soap',     category: 'Personal Care', price: 45,  stock: 25, threshold: 5  },
-    ];
-    samples.forEach(s => State.addProduct({ id: genId(), ...s }));
+  try {
+    await State.refresh();
+  } catch (err) {
+    showToast(err.message, 'error');
   }
 
-  // Load starting page
-  const startPage = location.hash.replace('#', '') || 'dashboard';
+  const startPage = location.hash.replace('#', '') || (State.products.length ? 'dashboard' : 'apikey');
   navigate(startPage);
 })();

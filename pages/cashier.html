@@ -47,7 +47,7 @@
           <input type="number" id="discount-input" placeholder="0.00" min="0" oninput="renderTotals()" />
         </div>
         <div>
-          <label>Cash Tendered (₱)</label>
+          <label>Cash Tendered (₱) <small style="font-weight:400;color:var(--text-xs)">blank = exact</small></label>
           <input type="number" id="cash-input" placeholder="0.00" min="0" oninput="renderTotals()" />
         </div>
       </div>
@@ -60,7 +60,7 @@
         <div class="total-row change-row"><span>Change</span><span id="t-change">₱0.00</span></div>
       </div>
 
-      <button class="btn btn-success btn-lg btn-block" onclick="checkout()">
+      <button class="btn btn-success btn-lg btn-block" id="checkout-btn" onclick="checkout()">
         💳 &nbsp; Checkout
       </button>
 

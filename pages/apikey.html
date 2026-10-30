@@ -1,0 +1,95 @@
+<!-- ============================================================
+     API KEY TESTER PAGE
+     ============================================================ -->
+
+<div class="key-grid">
+
+  <!-- Test a key -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Test an InventaAPI key</h2>
+      <span class="badge badge-gray" id="key-endpoint"></span>
+    </div>
+    <div class="card-body">
+      <p class="help-text">
+        Paste the key from <b>inventaapi.shop → Dashboard → API Keys</b>. We call
+        <code>GET /daas/v1/catalog</code> with it and show the products linked to that key.
+        Leave it empty to test the key in your <code>.env</code>.
+      </p>
+
+      <div class="form-group">
+        <label for="key-input">API key</label>
+        <div class="key-input-row">
+          <input type="password" class="form-control mono" id="key-input" placeholder="Paste your API key" autocomplete="off" spellcheck="false" />
+          <button class="btn btn-outline btn-sm" type="button" onclick="toggleKeyVisibility()" id="key-eye">Show</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="key-search">Search (optional)</label>
+        <input type="text" class="form-control" id="key-search" placeholder="e.g. coffee" />
+      </div>
+
+      <div class="key-actions">
+        <button class="btn btn-primary" id="key-test-btn" onclick="testKey()">▶ Test key</button>
+        <button class="btn btn-outline" onclick="usePastedKey()" id="key-use-btn" title="Use this key in the POS for this browser tab">Use in POS (this tab)</button>
+      </div>
+
+      <div id="key-result"></div>
+    </div>
+  </div>
+
+  <!-- .env instructions -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Use it in your project (.env)</h2>
+    </div>
+    <div class="card-body">
+      <p class="help-text">Put the key in a <code>.env</code> file in the project root (next to <code>package.json</code>). Never commit that file.</p>
+      <div class="code-block">
+        <button class="btn btn-outline btn-sm copy-btn" onclick="copyEnv()">Copy</button>
+        <pre id="env-snippet"></pre>
+      </div>
+
+      <ol class="steps">
+        <li>Copy the lines above into <code>.env</code> (or run <code>cp .env.example .env</code> and edit it).</li>
+        <li>Run <code>npm run dev</code> and open <code>http://localhost:3000</code>.</li>
+        <li>Go to <b>Products → Sync from API</b>. The POS now sells exactly the products on that key.</li>
+        <li>On Vercel: add the same values under <b>Project → Settings → Environment Variables</b>, then redeploy.</li>
+      </ol>
+
+      <p class="help-text" style="margin-top:14px;">Calling the API from your own code:</p>
+      <div class="code-block">
+        <pre>const res = await fetch(`${process.env.INVENTA_API_URL}/daas/v1/catalog`, {
+  headers: { 'x-api-key': process.env.INVENTA_API_KEY },
+});
+const { products, meta } = await res.json();</pre>
+      </div>
+
+      <div id="server-config" class="server-config"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Products returned -->
+<div class="card" id="key-products-card" style="display:none;">
+  <div class="card-header">
+    <h2>Products on this key</h2>
+    <span id="key-products-count" style="font-size:12px; color:var(--text-xs);"></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Product</th>
+        <th>Variant</th>
+        <th>SKU</th>
+        <th>Category</th>
+        <th>Segment</th>
+        <th>Product ID</th>
+      </tr>
+    </thead>
+    <tbody id="key-products-body"></tbody>
+  </table>
+</div>
