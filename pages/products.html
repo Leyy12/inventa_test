@@ -1,0 +1,117 @@
+<!-- ============================================================
+     PRODUCTS PAGE
+     ============================================================ -->
+
+<!-- Toolbar -->
+<div class="page-toolbar">
+  <div class="toolbar-left">
+    <input
+      type="text"
+      class="search-input"
+      id="product-search"
+      placeholder="Search products..."
+      oninput="filterProducts()"
+    />
+    <select class="form-control" id="product-category-filter" onchange="filterProducts()" style="width:160px; padding:9px 12px;">
+      <option value="">All Categories</option>
+      <option>Beverages</option>
+      <option>Food</option>
+      <option>Snacks</option>
+      <option>Household</option>
+      <option>Personal Care</option>
+      <option>Other</option>
+    </select>
+  </div>
+  <div class="toolbar-right">
+    <button class="btn btn-primary" onclick="openProductModal()">
+      <span style="font-size:16px; line-height:1;">＋</span> Add Product
+    </button>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <h2>Product List</h2>
+    <span id="product-count" style="font-size:12px; color:var(--text-xs);"></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Product Name</th>
+        <th>Category</th>
+        <th>Price</th>
+        <th>Stock</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="product-table-body">
+      <tr class="empty-row"><td colspan="7">Loading...</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ── Product Modal ── -->
+<div class="modal-overlay" id="product-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="product-modal-title">Add Product</h3>
+      <button class="modal-close" onclick="closeProductModal()">✕</button>
+    </div>
+
+    <div class="form-group">
+      <label>Product Name *</label>
+      <input type="text" class="form-control" id="p-name" placeholder="e.g. Coca-Cola 1.5L" />
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Category</label>
+        <select class="form-control" id="p-category">
+          <option>Beverages</option>
+          <option>Food</option>
+          <option>Snacks</option>
+          <option>Household</option>
+          <option>Personal Care</option>
+          <option>Other</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Price (₱) *</label>
+        <input type="number" class="form-control" id="p-price" placeholder="0.00" min="0" step="0.01" />
+      </div>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label>Stock Quantity *</label>
+        <input type="number" class="form-control" id="p-stock" placeholder="0" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Low Stock Threshold</label>
+        <input type="number" class="form-control" id="p-threshold" placeholder="5" min="1" value="5" />
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeProductModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProduct()">Save Product</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Delete Modal ── -->
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal modal-sm" style="text-align:center;">
+    <div style="font-size:52px; margin-bottom:12px;">🗑️</div>
+    <h3 style="margin-bottom:8px;">Delete Product?</h3>
+    <p style="font-size:13px; color:var(--text-sm); margin-bottom:4px;" id="delete-product-name"></p>
+    <p style="font-size:12px; color:var(--text-xs);">This action cannot be undone.</p>
+    <div class="modal-footer" style="justify-content:center;">
+      <button class="btn btn-outline" onclick="closeDeleteModal()">Cancel</button>
+      <button class="btn btn-danger" onclick="confirmDelete()">Yes, Delete</button>
+    </div>
+  </div>
+</div>

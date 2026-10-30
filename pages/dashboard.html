@@ -1,0 +1,76 @@
+<!-- ============================================================
+     DASHBOARD PAGE
+     ============================================================ -->
+
+<!-- Stats Row -->
+<div class="stats-grid" id="stats-grid">
+  <div class="stat-card">
+    <div class="stat-icon blue">💰</div>
+    <div class="stat-info">
+      <div class="stat-label">Today's Sales</div>
+      <div class="stat-value" id="dash-sales">₱0.00</div>
+      <div class="stat-sub"  id="dash-txn-count">0 transactions</div>
+    </div>
+  </div>
+  <div class="stat-card green">
+    <div class="stat-icon green">📦</div>
+    <div class="stat-info">
+      <div class="stat-label">Total Products</div>
+      <div class="stat-value" id="dash-products">0</div>
+      <div class="stat-sub"  id="dash-low-stock">0 low stock</div>
+    </div>
+  </div>
+  <div class="stat-card orange">
+    <div class="stat-icon orange">🛍️</div>
+    <div class="stat-info">
+      <div class="stat-label">Items Sold Today</div>
+      <div class="stat-value" id="dash-items">0</div>
+      <div class="stat-sub">units</div>
+    </div>
+  </div>
+  <div class="stat-card purple">
+    <div class="stat-icon purple">📋</div>
+    <div class="stat-info">
+      <div class="stat-label">All-Time Transactions</div>
+      <div class="stat-value" id="dash-all-txn">0</div>
+      <div class="stat-sub">since opening</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Grid -->
+<div class="dash-grid">
+
+  <!-- Recent Transactions -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Recent Transactions</h2>
+      <button class="btn btn-outline btn-sm" onclick="navigate('transactions')">View All</button>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Date &amp; Time</th>
+          <th>Items</th>
+          <th>Total</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="dash-recent-body">
+        <tr class="empty-row"><td colspan="5">No transactions yet</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Top Products -->
+  <div class="card">
+    <div class="card-header">
+      <h2>Top Products</h2>
+    </div>
+    <ul class="top-products-list" id="dash-top-products">
+      <li style="justify-content:center; color:var(--text-xs); padding:28px 0;">No data yet</li>
+    </ul>
+  </div>
+
+</div>

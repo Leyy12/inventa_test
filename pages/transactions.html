@@ -1,0 +1,69 @@
+<!-- ============================================================
+     TRANSACTIONS PAGE
+     ============================================================ -->
+
+<!-- Toolbar -->
+<div class="page-toolbar">
+  <div class="toolbar-left">
+    <input
+      type="text"
+      class="search-input"
+      id="txn-search"
+      placeholder="Search transactions..."
+      oninput="filterTransactions()"
+    />
+  </div>
+  <div class="toolbar-right">
+    <button class="btn btn-outline" onclick="exportCSV()">
+      ⬇ Export CSV
+    </button>
+  </div>
+</div>
+
+<!-- Summary quick cards -->
+<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-bottom:20px;">
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-body" style="padding:16px 20px;">
+      <div class="stat-label">Total Revenue</div>
+      <div class="stat-value" id="txn-total-rev" style="font-size:20px; margin-top:4px;">₱0.00</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-body" style="padding:16px 20px;">
+      <div class="stat-label">Total Transactions</div>
+      <div class="stat-value" id="txn-total-count" style="font-size:20px; margin-top:4px;">0</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:0;">
+    <div class="card-body" style="padding:16px 20px;">
+      <div class="stat-label">Total Discount Given</div>
+      <div class="stat-value" id="txn-total-discount" style="font-size:20px; margin-top:4px;">₱0.00</div>
+    </div>
+  </div>
+</div>
+
+<!-- Table -->
+<div class="card">
+  <div class="card-header">
+    <h2>Transaction History</h2>
+    <span id="txn-count-label" style="font-size:12px; color:var(--text-xs);"></span>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Date &amp; Time</th>
+        <th>Items</th>
+        <th>Subtotal</th>
+        <th>Discount</th>
+        <th>Total</th>
+        <th>Cash</th>
+        <th>Change</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="txn-table-body">
+      <tr class="empty-row"><td colspan="9">No transactions yet</td></tr>
+    </tbody>
+  </table>
+</div>

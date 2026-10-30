@@ -1,0 +1,85 @@
+<!-- ============================================================
+     CASHIER PAGE
+     ============================================================ -->
+<div class="pos-layout">
+
+  <!-- LEFT: Product Grid -->
+  <div class="pos-left">
+    <div class="pos-search">
+      <input
+        type="text"
+        id="pos-search"
+        placeholder="Search products..."
+        oninput="renderPosTiles()"
+      />
+    </div>
+    <div class="product-grid" id="pos-tiles">
+      <!-- Tiles injected by cashier.js -->
+    </div>
+  </div>
+
+  <!-- RIGHT: Cart -->
+  <div class="cart-panel">
+
+    <div class="cart-header">
+      <div class="cart-header-title">
+        🛒 Cart
+        <span class="cart-count" id="cart-count">0</span>
+      </div>
+      <button class="btn btn-outline btn-sm" onclick="clearCart()">Clear</button>
+    </div>
+
+    <!-- Items -->
+    <div class="cart-items" id="cart-items">
+      <div class="cart-empty">
+        <div class="cart-empty-icon">🛒</div>
+        Cart is empty.<br>Click a product to add.
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="cart-footer">
+
+      <!-- Discount & Cash inputs -->
+      <div class="cart-inputs">
+        <div>
+          <label>Discount (₱)</label>
+          <input type="number" id="discount-input" placeholder="0.00" min="0" oninput="renderTotals()" />
+        </div>
+        <div>
+          <label>Cash Tendered (₱)</label>
+          <input type="number" id="cash-input" placeholder="0.00" min="0" oninput="renderTotals()" />
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="totals-rows">
+        <div class="total-row"><span>Subtotal</span>  <span id="t-subtotal">₱0.00</span></div>
+        <div class="total-row"><span>Discount</span>  <span id="t-discount">₱0.00</span></div>
+        <div class="total-row grand"><span>TOTAL</span><span id="t-total">₱0.00</span></div>
+        <div class="total-row change-row"><span>Change</span><span id="t-change">₱0.00</span></div>
+      </div>
+
+      <button class="btn btn-success btn-lg btn-block" onclick="checkout()">
+        💳 &nbsp; Checkout
+      </button>
+
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Receipt Modal ── -->
+<div class="modal-overlay" id="receipt-modal">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <h3>Receipt</h3>
+      <button class="modal-close" onclick="closeReceiptModal()">✕</button>
+    </div>
+    <div class="receipt" id="receipt-content"></div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeReceiptModal()">Close</button>
+      <button class="btn btn-primary" onclick="printReceipt()">🖨 Print</button>
+    </div>
+  </div>
+</div>
