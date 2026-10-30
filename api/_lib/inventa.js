@@ -2,8 +2,8 @@
 import { config } from './config.js';
 import { HttpError } from './http.js';
 
-// Paid InventaAPI plans count API requests (Pro 15,000, Pro Max 20,000 a month): each
-// page fetched is one request. Stop after this many pages as a safety net.
+// Paid InventaAPI plans have unlimited requests (60 per minute per IP); each page
+// fetched is recorded as one request. Stop after this many pages as a safety net.
 const MAX_PAGES = 20;
 
 // Plain-language explanations for the errors InventaAPI returns.

@@ -77,7 +77,7 @@ GET {INVENTA_API_URL}/daas/v1/catalog?segment=Grocery|Pharmacy|Hardware&page=N
 x-api-key: {INVENTA_API_KEY}
 ```
 
-Each store asks only for its own segment. On Pro (15,000 a month) and Pro Max (20,000 a month), every API call counts as one request, however many products it returns: a key test is one request, and a sync is one request per page. If the allowance runs out, InventaAPI answers 429 and the POS shows its message. Full rules: InventaAPI's Documentation page (inventaapi.shop → Documentation).
+Each store asks only for its own segment. Pro and Pro Max have unlimited API requests; each call is recorded as one request (a key test is one, a sync is one per page). InventaAPI allows up to 60 requests per minute from one IP address; above that it answers 429 and the POS shows its message. Full rules: InventaAPI's Documentation page (inventaapi.shop → Documentation).
 
 ## Files
 
