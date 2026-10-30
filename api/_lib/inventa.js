@@ -2,7 +2,9 @@
 import { config } from './config.js';
 import { HttpError } from './http.js';
 
-const MAX_PAGES = 20; // each page counts as one request against the key's quota
+// Paid InventaAPI plans count every product delivered (15,000 a month), so a sync
+// uses as many as the key has. Stop after this many pages as a safety net.
+const MAX_PAGES = 20;
 
 // Plain-language explanations for the errors InventaAPI returns.
 const HINTS = {
@@ -51,13 +53,16 @@ export async function fetchFullCatalog(apiKey) {
   const products = [...(first.body.products || [])];
   let pagination = first.body.meta?.pagination;
   let pages = 1;
-  while (pagination?.hasNextPage && pages < MAX_PAGES) {
+  let quotaMessage = first.body.meta?.quotaMessage || null;
+  // When the monthly product allowance runs out mid-sync, keep what arrived and stop.
+  while (pagination?.hasNextPage && !quotaMessage && pages < MAX_PAGES) {
     const next = await fetchCatalogPage(apiKey, { page: pagination.nextPage });
     products.push(...(next.body.products || []));
     pagination = next.body.meta?.pagination;
+    quotaMessage = next.body.meta?.quotaMessage || null;
     pages++;
   }
-  return { meta: first.body.meta || {}, message: first.body.message || null, products, pages, latencyMs: first.latencyMs };
+  return { meta: first.body.meta || {}, message: quotaMessage || first.body.message || null, products, pages, latencyMs: first.latencyMs };
 }
 
 function variantLabel(v) {

@@ -18,7 +18,8 @@ function renderSyncBanner(result) {
     el.className = 'sync-banner ok';
     el.innerHTML = `✅ ${esc(State.currentStore().label)}: synced <b>${result.items}</b> item(s) from <b>${result.products}</b> product(s) on key
       <b>${esc(result.keyName || result.keyHint)}</b>${result.plan ? ` (${esc(result.plan)} plan)` : ''}.
-      ${result.items ? 'Set a price for new items before selling them.' : esc(result.message || 'No products are linked to this key.')}`;
+      ${result.items ? 'Set a price for new items before selling them.' : esc(result.message || 'No products are linked to this key.')}
+      ${result.items && result.message ? `<br>⚠️ ${esc(result.message)}` : ''}`;
     return;
   }
   const cur = State.currentStore();

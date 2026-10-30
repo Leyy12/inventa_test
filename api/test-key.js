@@ -26,7 +26,7 @@ export default route({
         ok: true, store: shop.id, source, keyHint: keyHint(key), statusCode, latencyMs,
         keyName: meta.keyName ?? null, plan: meta.plan ?? null,
         total: meta.total ?? products.length, count: products.length,
-        pagination: meta.pagination || null, quota: meta.quota || null,
+        pagination: meta.pagination || null, quota: meta.quota || null, quotaMessage: meta.quotaMessage || null,
         message: data.message || null,
         products, items: toPosItems(products, shop.id),
       };

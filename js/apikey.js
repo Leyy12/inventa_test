@@ -96,10 +96,11 @@ async function testKey(storeId) {
           <div><span>Plan</span><b>${esc(r.plan || '—')}</b></div>
           <div><span>Products</span><b>${r.total}</b></div>
           <div><span>Response</span><b>${r.statusCode} · ${r.latencyMs} ms</b></div>
-          <div><span>Requests used</span><b>${esc(quota)}</b></div>
+          <div><span>${r.quota?.unit === 'products' ? 'Products used this month' : 'Requests used'}</span><b>${esc(quota)}</b></div>
           <div><span>Tested</span><b class="mono">${esc(r.keyHint)}</b></div>
         </div>
         ${r.message ? `<p class="result-note">${esc(r.message)}</p>` : ''}
+        ${r.quotaMessage ? `<p class="result-note">⚠️ ${esc(r.quotaMessage)}</p>` : ''}
         ${r.pagination?.hasNextPage ? `<p class="result-note">Showing page 1 of ${r.pagination.totalPages}. Sync loads every page.</p>` : ''}
       </div>`;
     renderKeyProducts(st, r.items, r.total);

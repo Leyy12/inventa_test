@@ -2,7 +2,7 @@
 
 A point-of-sale app for testing **InventaAPI** keys from [inventaapi.shop](https://inventaapi.shop). It has three stores (**Grocery**, **Pharmacy**, **Hardware**), each with its own API key, products, prices, stock and sales. Switch stores with the selector at the top.
 
-- **API Key page**: tests each store's key from your `.env` file and shows whether it works (key name, plan, request quota, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
+- **API Key page**: tests each store's key from your `.env` file and shows whether it works (key name, plan, products used this month, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
 - **Products**: press **Sync from API** to load every product on the key (all pages, one item per variant). Then set a selling price and stock for each item. InventaAPI does not send prices, so the POS keeps them.
 - **Cashier / Transactions / Dashboard**: sell, print receipts, export CSV. Prices and stock are checked on the server, not in the browser.
 - Data is stored in **Supabase**. The site runs on **Vercel**.
@@ -69,7 +69,7 @@ GET {INVENTA_API_URL}/daas/v1/catalog?page=N
 x-api-key: {INVENTA_API_KEY_GROCERY | _PHARMACY | _HARDWARE}
 ```
 
-Each call counts toward the key's request quota. A sync makes one call per page (Free plans get 50 products per page), and a key test makes one call.
+On Pro and Pro Max, every product the API sends counts toward the month's 15,000 products for that store's segment. A sync uses one per product on the key, and a key test uses one per product it shows.
 
 ## Files
 
