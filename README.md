@@ -69,7 +69,7 @@ GET {INVENTA_API_URL}/daas/v1/catalog?page=N
 x-api-key: {INVENTA_API_KEY_GROCERY | _PHARMACY | _HARDWARE}
 ```
 
-On Pro and Pro Max, every product the API sends counts toward the month's 15,000 products for that store's segment. A sync uses one per product on the key, and a key test uses one per product it shows.
+On Pro and Pro Max, every product variant the API sends counts toward the month's 15,000 for that store's segment (a product without variants counts as one). A sync uses one per variant on the key, and so does a key test.
 
 ## Files
 
