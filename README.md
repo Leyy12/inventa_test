@@ -1,8 +1,8 @@
 # QuickPOS · InventaAPI test POS
 
-A point-of-sale app for testing **InventaAPI** keys from [inventaapi.shop](https://inventaapi.shop). It has three stores (**Grocery**, **Pharmacy**, **Hardware**), each with its own API key, products, prices, stock and sales. Switch stores with the selector at the top.
+A point-of-sale app for testing **InventaAPI** keys from [inventaapi.shop](https://inventaapi.shop). It has three stores (**Grocery**, **Pharmacy**, **Hardware**) that share **one** InventaAPI key (Pro Max). Each store gets only its segment's products and keeps its own prices, stock and sales. Switch stores with the selector at the top.
 
-- **API Key page**: tests each store's key from your `.env` file and shows whether it works (key name, plan, products used this month, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
+- **API Key page**: tests the key from your `.env` file for each store and shows whether it works (key name, plan, products used this month, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
 - **Products**: press **Sync from API** to load every product on the key (all pages, one item per variant). Then set a selling price and stock for each item. InventaAPI does not send prices, so the POS keeps them.
 - **Cashier / Transactions / Dashboard**: sell, print receipts, export CSV. Prices and stock are checked on the server, not in the browser.
 - Data is stored in **Supabase**. The site runs on **Vercel**.
@@ -15,15 +15,13 @@ Requires Node.js 18 or newer. Nothing to install: there are no dependencies.
 npm run setup
 ```
 
-This creates a `.env` file. Open it in your editor and paste one key per store after the `=`:
+This creates a `.env` file. Open it in your editor and paste your key after the `=`:
 
 ```env
-INVENTA_API_KEY_GROCERY=your-grocery-key
-INVENTA_API_KEY_PHARMACY=your-pharmacy-key
-INVENTA_API_KEY_HARDWARE=your-hardware-key
+INVENTA_API_KEY=your-pro-max-api-key
 ```
 
-A store without a key just stays empty. The Supabase lines are already filled in.
+The Supabase lines are already filled in. (Older setups with `INVENTA_API_KEY_GROCERY`, `_PHARMACY` and `_HARDWARE` still work; `INVENTA_API_KEY` wins when both are set.)
 
 ```bash
 npm run dev
@@ -40,9 +38,7 @@ The key is only ever read from `.env`. The website never asks for it or shows it
 
 | Name | Required | What it is |
 | --- | --- | --- |
-| `INVENTA_API_KEY_GROCERY` | per store | Grocery key from inventaapi.shop → Dashboard → API Keys. Keys stay on the server and are never sent to the browser. |
-| `INVENTA_API_KEY_PHARMACY` | per store | Pharmacy key. |
-| `INVENTA_API_KEY_HARDWARE` | per store | Hardware key. |
+| `INVENTA_API_KEY` | yes | Your key from inventaapi.shop → Dashboard → API Keys, used by all three stores. It stays on the server and is never sent to the browser. |
 | `INVENTA_API_URL` | no | Defaults to `https://inventaapi.shop`. |
 | `SUPABASE_URL` | for Supabase | Supabase → Project Settings → API. |
 | `SUPABASE_PUBLISHABLE_KEY` | for Supabase | The `sb_publishable_…` key. (`SUPABASE_SECRET_KEY` also works.) |
@@ -65,11 +61,11 @@ The tables are in `supabase/migrations/20261030000000_pos.sql`: `pos_products`, 
 ## How it talks to InventaAPI
 
 ```
-GET {INVENTA_API_URL}/daas/v1/catalog?page=N
-x-api-key: {INVENTA_API_KEY_GROCERY | _PHARMACY | _HARDWARE}
+GET {INVENTA_API_URL}/daas/v1/catalog?segment=Grocery|Pharmacy|Hardware&page=N
+x-api-key: {INVENTA_API_KEY}
 ```
 
-On Pro and Pro Max, every product the API sends counts toward the month's 15,000 products for that store's segment. A sync uses one per product on the key, and a key test uses one per product it shows.
+Each store asks only for its own segment. On Pro and Pro Max, every product variant the API sends counts toward the month's 15,000 for that product's segment (a product without variants counts as one). A sync uses one per variant on the key, and so does a key test.
 
 ## Files
 

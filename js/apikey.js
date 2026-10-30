@@ -21,7 +21,7 @@ function renderStoreKeys() {
         <b>${esc(st.label)}</b>
         ${st.keySet ? `<span class="badge badge-success">key found · <span class="mono">${esc(st.keyHint)}</span></span>`
                     : '<span class="badge badge-warning">no key yet</span>'}
-        <div class="env">${esc(st.env)}</div>
+        <div class="env">${esc(st.env)} · ${esc(st.segment)} products only</div>
       </div>
       <button class="btn btn-primary btn-sm" data-store="${esc(st.id)}" onclick="testKey(this.dataset.store)" ${st.keySet ? '' : 'disabled'}>▶ Test</button>
     </div>`).join('');
@@ -44,9 +44,7 @@ function renderEnvSnippet() {
   const el = document.getElementById('env-snippet');
   if (!el) return;
   const url = State.status?.inventaUrl || 'https://inventaapi.shop';
-  el.textContent = 'INVENTA_API_KEY_GROCERY=paste-grocery-key-here\n'
-    + 'INVENTA_API_KEY_PHARMACY=paste-pharmacy-key-here\n'
-    + 'INVENTA_API_KEY_HARDWARE=paste-hardware-key-here\n'
+  el.textContent = 'INVENTA_API_KEY=paste-your-pro-max-api-key-here\n'
     + `INVENTA_API_URL=${url}`;
 }
 
@@ -58,7 +56,7 @@ function renderServerConfig() {
     `<div class="cfg-row"><span>${esc(label)}</span><span class="badge ${ok ? 'badge-success' : 'badge-warning'}">${esc(text)}</span></div>`;
   el.innerHTML = `
     <p class="help-text" style="margin:14px 0 6px;"><b>This server right now</b></p>
-    ${s.stores.map(st => row(st.env, st.keySet, st.keySet ? 'set · ' + st.keyHint : 'not set')).join('')}
+    ${[...new Map(s.stores.map(st => [st.env, st])).values()].map(st => row(st.env, st.keySet, st.keySet ? 'set · ' + st.keyHint : 'not set')).join('')}
     ${row('INVENTA_API_URL', true, s.inventaUrl)}
     ${row('Storage', s.storage === 'supabase', s.storage === 'supabase' ? 'Supabase' : 'local file (no Supabase)')}
   `;
@@ -96,7 +94,7 @@ async function testKey(storeId) {
           <div><span>Plan</span><b>${esc(r.plan || '—')}</b></div>
           <div><span>Products</span><b>${r.total}</b></div>
           <div><span>Response</span><b>${r.statusCode} · ${r.latencyMs} ms</b></div>
-          <div><span>${r.quota?.unit === 'products' ? 'Products used this month' : 'Requests used'}</span><b>${esc(quota)}</b></div>
+          <div><span>${r.quota?.unit === 'products' ? 'Variants used this month' : 'Requests used'}</span><b>${esc(quota)}</b></div>
           <div><span>Tested</span><b class="mono">${esc(r.keyHint)}</b></div>
         </div>
         ${r.message ? `<p class="result-note">${esc(r.message)}</p>` : ''}
