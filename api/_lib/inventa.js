@@ -15,6 +15,17 @@ const HINTS = {
   SERVICE_UNAVAILABLE: 'InventaAPI could not verify the key right now. Try again in a minute.',
 };
 
+// InventaAPI counts each product once per app per month and detects the app from
+// the Origin header (else the caller's IP). This POS runs on servers whose IPs
+// change (Vercel), so it names its own site to stay one app: INVENTA_APP_ORIGIN,
+// else the Vercel production domain. Locally there is none, so the IP is used.
+function appOrigin() {
+  const explicit = (process.env.INVENTA_APP_ORIGIN || '').trim();
+  const vercel = (process.env.VERCEL_PROJECT_PRODUCTION_URL || '').trim();
+  const origin = explicit || (vercel ? `https://${vercel}` : '');
+  return /^https?:\/\/[^\s/]+$/u.test(origin) ? { Origin: origin } : {};
+}
+
 export async function fetchCatalogPage(apiKey, { page = 1, search = '', segment = '' } = {}) {
   const { inventaUrl } = config();
   if (!apiKey) throw new HttpError(400, 'No API key found in .env.');
@@ -29,7 +40,7 @@ export async function fetchCatalogPage(apiKey, { page = 1, search = '', segment 
   let res;
   try {
     res = await fetch(url, {
-      headers: { 'x-api-key': apiKey, Accept: 'application/json' },
+      headers: { 'x-api-key': apiKey, Accept: 'application/json', ...appOrigin() },
       signal: AbortSignal.timeout(20000),
     });
   } catch (err) {
