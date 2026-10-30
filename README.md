@@ -40,6 +40,7 @@ The key is only ever read from `.env`. The website never asks for it or shows it
 | --- | --- | --- |
 | `INVENTA_API_KEY` | yes | Your key from inventaapi.shop → Dashboard → API Keys, used by all three stores. It stays on the server and is never sent to the browser. |
 | `INVENTA_API_URL` | no | Defaults to `https://inventaapi.shop`. |
+| `INVENTA_APP_ORIGIN` | no | The site this POS reports to InventaAPI as its app (e.g. `https://inventa-test-pos.vercel.app`). On Vercel the production domain is used automatically. |
 | `SUPABASE_URL` | for Supabase | Supabase → Project Settings → API. |
 | `SUPABASE_PUBLISHABLE_KEY` | for Supabase | The `sb_publishable_…` key. (`SUPABASE_SECRET_KEY` also works.) |
 
@@ -77,7 +78,7 @@ GET {INVENTA_API_URL}/daas/v1/catalog?segment=Grocery|Pharmacy|Hardware&page=N
 x-api-key: {INVENTA_API_KEY}
 ```
 
-Each store asks only for its own segment. On Pro (15,000 a month) and Pro Max (20,000 a month, shared by the three segments), every product variant the API sends counts as one (a product without variants counts as one): a sync or key test uses one per variant it receives. If the allowance runs out mid-sync, the POS keeps what arrived and shows InventaAPI's message. Full rules: InventaAPI's Documentation page (inventaapi.shop → Documentation).
+Each store asks only for its own segment. On Pro (15,000 a month) and Pro Max (20,000 a month, shared by the three segments), every product variant the API sends counts as one (a product without variants counts as one): a sync or key test uses one per variant it receives. If the allowance runs out mid-sync, the POS keeps what arrived and shows InventaAPI's message. InventaAPI counts each product once per app per month, so syncing again from the same site is free; the POS identifies itself by its site domain so its changing server IPs don't look like new apps. Full rules: InventaAPI's Documentation page (inventaapi.shop → Documentation).
 
 ## Files
 
