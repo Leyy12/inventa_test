@@ -2,7 +2,7 @@
 
 A point-of-sale app for testing an **InventaAPI** key from [inventaapi.shop](https://inventaapi.shop).
 
-- **API Key page**: paste a key, see whether it works (key name, plan, request quota, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
+- **API Key page**: tests the key from your `.env` file and shows whether it works (key name, plan, request quota, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
 - **Products**: press **Sync from API** to load every product on the key (all pages, one item per variant). Then set a selling price and stock for each item. InventaAPI does not send prices, so the POS keeps them.
 - **Cashier / Transactions / Dashboard**: sell, print receipts, export CSV. Prices and stock are checked on the server, not in the browser.
 - Data is stored in **Supabase**. The site runs on **Vercel**.
@@ -32,7 +32,7 @@ npm run dev
 Open http://localhost:3000, go to **Products → Sync from API**, set prices, and start selling.
 
 Without the Supabase lines, data is saved to `.data/quickpos.json` instead. That's fine for a quick try.
-Without `INVENTA_API_KEY`, paste a key on the API Key page and press **Use in POS (this tab)**.
+The key is only ever read from `.env`. The website never asks for it or shows it. After changing `.env`, restart `npm run dev`.
 
 `.env` is in `.gitignore`. Never commit it.
 

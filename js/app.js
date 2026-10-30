@@ -4,23 +4,11 @@
    from InventaAPI and keeps prices, stock and sales in Supabase.
    ============================================================ */
 
-// ── API client ─────────────────────────────────────────────
-// A key pasted on the API Key page is kept for this browser tab only and
-// is used when the server has no INVENTA_API_KEY in its .env.
-const PASTED_KEY = 'inventa_pasted_key';
-
-function pastedKey() {
-  try { return sessionStorage.getItem(PASTED_KEY) || ''; } catch { return ''; }
-}
-function setPastedKey(key) {
-  try { key ? sessionStorage.setItem(PASTED_KEY, key) : sessionStorage.removeItem(PASTED_KEY); } catch { /* private mode */ }
-}
-
+// ── API client ──────────────────────────────────────────
+// The InventaAPI key is never handled here: the server reads it from .env.
 async function api(path, { method = 'GET', body } = {}) {
   const headers = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
-  const key = pastedKey();
-  if (key) headers['x-inventa-key'] = key;
 
   let res;
   try {
@@ -108,9 +96,9 @@ function renderConnection() {
   const el = document.getElementById('conn-status');
   if (!el || !State.status) return;
   const s = State.status;
-  const keyText = s.envKeySet ? `Key ${s.envKeyHint} (.env)` : pastedKey() ? 'Pasted key (this tab)' : 'No API key';
+  const keyText = s.envKeySet ? `Key ${s.envKeyHint} (.env)` : 'No API key in .env';
   const storeText = s.storage === 'supabase' ? 'Supabase' : 'Local file';
-  const ok = s.envKeySet || pastedKey();
+  const ok = s.envKeySet;
   el.className = 'store-status' + (ok ? '' : ' warn');
   el.innerHTML = `<span class="status-dot"></span><span>${esc(keyText)} · ${esc(storeText)}</span>`;
   el.title = `InventaAPI: ${s.inventaUrl}`;

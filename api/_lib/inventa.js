@@ -15,7 +15,7 @@ const HINTS = {
 
 export async function fetchCatalogPage(apiKey, { page = 1, search = '' } = {}) {
   const { inventaUrl } = config();
-  if (!apiKey) throw new HttpError(400, 'No API key. Paste one on the API Key page or set INVENTA_API_KEY in .env.');
+  if (!apiKey) throw new HttpError(400, 'No API key found. Add INVENTA_API_KEY to your .env file and restart the server.');
 
   const url = new URL(`${inventaUrl}/daas/v1/catalog`);
   if (page > 1) url.searchParams.set('page', String(page));

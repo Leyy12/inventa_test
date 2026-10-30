@@ -1,5 +1,5 @@
-// POST /api/test-key  { key?, search? }
-// Calls InventaAPI's catalog with the given key (or the .env key) and reports
+// POST /api/test-key  { search? }
+// Calls InventaAPI's catalog with the key from .env (INVENTA_API_KEY) and reports
 // whether it works and which products it returns. Nothing is saved to the POS.
 import { route, readJson, HttpError } from './_lib/http.js';
 import { config, keyHint } from './_lib/config.js';
@@ -9,12 +9,10 @@ import { store } from './_lib/store.js';
 export default route({
   POST: async req => {
     const body = await readJson(req);
-    const pasted = typeof body.key === 'string' ? body.key.trim() : '';
-    const key = pasted || config().inventaKey;
-    const source = pasted ? 'pasted' : 'env';
+    const key = config().inventaKey;
+    const source = 'env';
     const search = typeof body.search === 'string' ? body.search.trim().slice(0, 100) : '';
-    if (!key) throw new HttpError(400, 'Paste an API key, or set INVENTA_API_KEY in .env.');
-    if (key.length > 300) throw new HttpError(400, 'That does not look like an API key.');
+    if (!key) throw new HttpError(400, 'No API key found. Add INVENTA_API_KEY to your .env file and restart the server.');
 
     const log = { key_hint: keyHint(key), search: search || null };
     try {

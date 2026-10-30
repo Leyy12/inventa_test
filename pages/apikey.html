@@ -1,29 +1,23 @@
 <!-- ============================================================
-     API KEY TESTER PAGE
+     API KEY PAGE  –  tests the key from the code (.env)
      ============================================================ -->
 
 <div class="key-grid">
 
-  <!-- Test a key -->
+  <!-- Test the key from .env -->
   <div class="card">
     <div class="card-header">
-      <h2>Test an InventaAPI key</h2>
+      <h2>Test your InventaAPI key</h2>
       <span class="badge badge-gray" id="key-endpoint"></span>
     </div>
     <div class="card-body">
       <p class="help-text">
-        Paste the key from <b>inventaapi.shop → Dashboard → API Keys</b>. We call
-        <code>GET /daas/v1/catalog</code> with it and show the products linked to that key.
-        Leave it empty to test the key in your <code>.env</code>.
+        The key is read from <code>INVENTA_API_KEY</code> in your <code>.env</code> file. It is never typed into
+        or shown on this website. Press <b>Test key</b> to call <code>GET /daas/v1/catalog</code> and see the
+        products linked to it.
       </p>
 
-      <div class="form-group">
-        <label for="key-input">API key</label>
-        <div class="key-input-row">
-          <input type="password" class="form-control mono" id="key-input" placeholder="Paste your API key" autocomplete="off" spellcheck="false" />
-          <button class="btn btn-outline btn-sm" type="button" onclick="toggleKeyVisibility()" id="key-eye">Show</button>
-        </div>
-      </div>
+      <div id="key-current" class="key-current"></div>
 
       <div class="form-group">
         <label for="key-search">Search (optional)</label>
@@ -32,7 +26,7 @@
 
       <div class="key-actions">
         <button class="btn btn-primary" id="key-test-btn" onclick="testKey()">▶ Test key</button>
-        <button class="btn btn-outline" onclick="usePastedKey()" id="key-use-btn" title="Use this key in the POS for this browser tab">Use in POS (this tab)</button>
+        <button class="btn btn-outline" onclick="recheckKey()" title="Check again after editing .env">⟳ Re-check .env</button>
       </div>
 
       <div id="key-result"></div>
@@ -42,20 +36,21 @@
   <!-- .env instructions -->
   <div class="card">
     <div class="card-header">
-      <h2>Use it in your project (.env)</h2>
+      <h2>Put the key in your code (.env)</h2>
     </div>
     <div class="card-body">
-      <p class="help-text">Put the key in a <code>.env</code> file in the project root (next to <code>package.json</code>). Never commit that file.</p>
+      <p class="help-text">Create a file named <code>.env</code> in the project folder (next to <code>package.json</code>) and paste your key from <b>inventaapi.shop → Dashboard → API Keys</b>:</p>
       <div class="code-block">
         <button class="btn btn-outline btn-sm copy-btn" onclick="copyEnv()">Copy</button>
         <pre id="env-snippet"></pre>
       </div>
 
       <ol class="steps">
-        <li>Copy the lines above into <code>.env</code> (or run <code>cp .env.example .env</code> and edit it).</li>
-        <li>Run <code>npm run dev</code> and open <code>http://localhost:3000</code>.</li>
+        <li>Replace <code>paste-your-inventa-api-key-here</code> with your key and save the file.</li>
+        <li>Restart the server: stop it (<code>Ctrl + C</code>) and run <code>npm run dev</code> again.</li>
+        <li>Press <b>Re-check .env</b>, then <b>Test key</b>.</li>
         <li>Go to <b>Products → Sync from API</b>. The POS now sells exactly the products on that key.</li>
-        <li>On Vercel: add the same values under <b>Project → Settings → Environment Variables</b>, then redeploy.</li>
+        <li>On Vercel: add <code>INVENTA_API_KEY</code> under <b>Project → Settings → Environment Variables</b>, then redeploy.</li>
       </ol>
 
       <p class="help-text" style="margin-top:14px;">Calling the API from your own code:</p>

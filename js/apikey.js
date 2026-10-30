@@ -1,25 +1,45 @@
 /* ============================================================
-   APIKEY.JS  –  Test an InventaAPI key and show its products
+   APIKEY.JS  –  Test the .env InventaAPI key and show its products
    ============================================================ */
 
 function loadApiKey() {
   const s = State.status;
-  const input = document.getElementById('key-input');
-  if (input) input.value = pastedKey();
   if (s) document.getElementById('key-endpoint').textContent = s.inventaUrl.replace(/^https?:\/\//, '') + '/daas/v1/catalog';
+  renderCurrentKey();
   renderEnvSnippet();
   renderServerConfig();
-  input?.addEventListener('input', renderEnvSnippet);
-  input?.addEventListener('keydown', e => { if (e.key === 'Enter') testKey(); });
   document.getElementById('key-search')?.addEventListener('keydown', e => { if (e.key === 'Enter') testKey(); });
+}
+
+function renderCurrentKey() {
+  const el = document.getElementById('key-current');
+  const s = State.status;
+  if (!el || !s) return;
+  el.className = 'key-current ' + (s.envKeySet ? 'ok' : 'warn');
+  el.innerHTML = s.envKeySet
+    ? `🔑 Key found in .env: <b class="mono">${esc(s.envKeyHint)}</b>`
+    : '⚠️ No key found. Add <code>INVENTA_API_KEY</code> to your <code>.env</code> file (see the steps on the right) and restart the server.';
+  const btn = document.getElementById('key-test-btn');
+  if (btn) btn.disabled = !s.envKeySet;
+}
+
+async function recheckKey() {
+  try {
+    State.status = await api('status');
+    renderConnection();
+    loadApiKey();
+    showToast(State.status.envKeySet ? 'Key found in .env.' : 'Still no key. Did you save .env and restart the server?',
+      State.status.envKeySet ? 'success' : 'error');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 function renderEnvSnippet() {
   const el = document.getElementById('env-snippet');
   if (!el) return;
-  const key = document.getElementById('key-input')?.value.trim();
   const url = State.status?.inventaUrl || 'https://inventaapi.shop';
-  el.textContent = `INVENTA_API_KEY=${key || 'paste-your-inventa-api-key-here'}\nINVENTA_API_URL=${url}`;
+  el.textContent = `INVENTA_API_KEY=paste-your-inventa-api-key-here\nINVENTA_API_URL=${url}`;
 }
 
 function renderServerConfig() {
@@ -36,13 +56,6 @@ function renderServerConfig() {
   `;
 }
 
-function toggleKeyVisibility() {
-  const input = document.getElementById('key-input');
-  const show = input.type === 'password';
-  input.type = show ? 'text' : 'password';
-  document.getElementById('key-eye').textContent = show ? 'Hide' : 'Show';
-}
-
 async function copyEnv() {
   const text = document.getElementById('env-snippet').textContent;
   try {
@@ -53,27 +66,10 @@ async function copyEnv() {
   }
 }
 
-function usePastedKey() {
-  const key = document.getElementById('key-input').value.trim();
-  if (State.status?.envKeySet) {
-    showToast('This server already uses the key from .env. Change .env to switch keys.', 'error');
-    return;
-  }
-  setPastedKey(key);
-  renderConnection();
-  showToast(key ? 'Key saved for this tab. Go to Products → Sync from API.' : 'Pasted key cleared.', 'success');
-}
-
 async function testKey() {
   const btn = document.getElementById('key-test-btn');
   const out = document.getElementById('key-result');
-  const key = document.getElementById('key-input').value.trim();
   const search = document.getElementById('key-search').value.trim();
-
-  if (!key && !State.status?.envKeySet) {
-    showToast('Paste an API key first.', 'error');
-    return;
-  }
 
   btn.disabled = true;
   btn.textContent = 'Testing…';
@@ -81,7 +77,7 @@ async function testKey() {
   document.getElementById('key-products-card').style.display = 'none';
 
   try {
-    const r = await api('test-key', { method: 'POST', body: { key, search } });
+    const r = await api('test-key', { method: 'POST', body: { search } });
     const quota = r.quota ? `${r.quota.used ?? '?'} / ${r.quota.limit ?? '∞'}` : '—';
     out.innerHTML = `
       <div class="result-box ok">
@@ -92,7 +88,7 @@ async function testKey() {
           <div><span>Products</span><b>${r.total}</b></div>
           <div><span>Response</span><b>${r.statusCode} · ${r.latencyMs} ms</b></div>
           <div><span>Requests used</span><b>${esc(quota)}</b></div>
-          <div><span>Tested</span><b>${r.source === 'env' ? '.env key' : 'pasted key'} ${esc(r.keyHint)}</b></div>
+          <div><span>Tested</span><b>.env key ${esc(r.keyHint)}</b></div>
         </div>
         ${r.message ? `<p class="result-note">${esc(r.message)}</p>` : ''}
         ${r.pagination?.hasNextPage ? `<p class="result-note">Showing page 1 of ${r.pagination.totalPages}. Sync loads every page.</p>` : ''}
@@ -107,7 +103,7 @@ async function testKey() {
         <p class="result-note mono">${d.code ? esc(d.code) + ' · ' : ''}HTTP ${esc(d.statusCode ?? err.status ?? '?')}${d.latencyMs != null ? ' · ' + d.latencyMs + ' ms' : ''}</p>
       </div>`;
   } finally {
-    btn.disabled = false;
+    btn.disabled = !State.status?.envKeySet;
     btn.textContent = '▶ Test key';
   }
 }

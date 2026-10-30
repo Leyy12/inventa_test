@@ -8,8 +8,8 @@ import { fetchFullCatalog, toPosItems } from './_lib/inventa.js';
 import { store } from './_lib/store.js';
 
 export default route({
-  POST: async req => {
-    const { key, source } = resolveKey(req);
+  POST: async () => {
+    const { key, source } = resolveKey();
     const catalog = await fetchFullCatalog(key);
     const items = toPosItems(catalog.products);
     await store().syncProducts(items);
