@@ -25,7 +25,7 @@ function renderSyncBanner(result) {
   const cur = State.currentStore();
   if (s && !cur.keySet) {
     el.className = 'sync-banner warn';
-    el.innerHTML = `No ${esc(cur.label)} API key yet. Add <code>${esc(cur.env)}</code> to your <code>.env</code> file and restart the server. See the <a href="#apikey">API Key</a> page.`;
+    el.innerHTML = `No API key yet. Add <code>INVENTA_API_KEY</code> to your <code>.env</code> file and restart the server. See the <a href="#apikey">API Key</a> page.`;
     return;
   }
   const last = State.products.reduce((m, p) => (p.synced_at && p.synced_at > m ? p.synced_at : m), '');

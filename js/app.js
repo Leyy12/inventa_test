@@ -123,7 +123,7 @@ function renderConnection() {
   document.getElementById('store-name').textContent = cur.label + ' Store';
   document.getElementById('store-icon').textContent = cur.icon;
 
-  const keyText = cur.keySet ? `Key ${cur.keyHint}` : `No ${cur.label} key in .env`;
+  const keyText = cur.keySet ? `Key ${cur.keyHint}` : 'No API key in .env';
   const storeText = s.storage === 'supabase' ? 'Supabase' : 'Local file';
   el.className = 'store-status' + (cur.keySet ? '' : ' warn');
   el.innerHTML = `<span class="status-dot"></span><span>${esc(keyText)} · ${esc(storeText)}</span>`;

@@ -15,7 +15,7 @@ export function resolveStore(req) {
 export function resolveKey(store) {
   const key = storeKey(store.id);
   if (!key) {
-    throw new HttpError(400, `No API key for ${store.label}. Add ${store.env} to your .env file and restart the server.`);
+    throw new HttpError(400, 'No API key found. Add INVENTA_API_KEY to your .env file and restart the server.');
   }
   return key;
 }

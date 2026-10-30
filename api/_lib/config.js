@@ -1,11 +1,12 @@
 // Reads settings from environment variables (.env locally, Project Settings on Vercel).
 // Secrets never leave the server: /api/status only reports whether they are set.
 
-// Each store has its own InventaAPI key, so each store sells its own products.
+// One InventaAPI key (Pro Max) covers all three stores; each store sells only its
+// segment's products. Older per-store keys still work when INVENTA_API_KEY is not set.
 export const STORES = [
-  { id: 'grocery',  label: 'Grocery',  icon: '🛒', env: 'INVENTA_API_KEY_GROCERY' },
-  { id: 'pharmacy', label: 'Pharmacy', icon: '💊', env: 'INVENTA_API_KEY_PHARMACY' },
-  { id: 'hardware', label: 'Hardware', icon: '🔧', env: 'INVENTA_API_KEY_HARDWARE' },
+  { id: 'grocery',  label: 'Grocery',  icon: '🛒', segment: 'Grocery',  env: 'INVENTA_API_KEY_GROCERY' },
+  { id: 'pharmacy', label: 'Pharmacy', icon: '💊', segment: 'Pharmacy', env: 'INVENTA_API_KEY_PHARMACY' },
+  { id: 'hardware', label: 'Hardware', icon: '🔧', segment: 'Hardware', env: 'INVENTA_API_KEY_HARDWARE' },
 ];
 
 export function config() {
@@ -21,7 +22,15 @@ export function config() {
 
 export function storeKey(storeId) {
   const store = STORES.find(s => s.id === storeId);
-  return store ? (process.env[store.env] || '').trim() : '';
+  if (!store) return '';
+  return (process.env.INVENTA_API_KEY || process.env[store.env] || '').trim();
+}
+
+// Which .env line a store's key comes from (shown on the API Key page).
+export function storeKeySource(storeId) {
+  const store = STORES.find(s => s.id === storeId);
+  if ((process.env.INVENTA_API_KEY || '').trim()) return 'INVENTA_API_KEY';
+  return store && (process.env[store.env] || '').trim() ? store.env : 'INVENTA_API_KEY';
 }
 
 // "abcdef…wxyz" — enough to recognise a key without revealing it.
