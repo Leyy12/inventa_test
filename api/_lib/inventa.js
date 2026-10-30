@@ -15,13 +15,15 @@ const HINTS = {
   SERVICE_UNAVAILABLE: 'InventaAPI could not verify the key right now. Try again in a minute.',
 };
 
-export async function fetchCatalogPage(apiKey, { page = 1, search = '' } = {}) {
+export async function fetchCatalogPage(apiKey, { page = 1, search = '', segment = '' } = {}) {
   const { inventaUrl } = config();
   if (!apiKey) throw new HttpError(400, 'No API key found in .env.');
 
   const url = new URL(`${inventaUrl}/daas/v1/catalog`);
   if (page > 1) url.searchParams.set('page', String(page));
   if (search) url.searchParams.set('search', search);
+  // Only this store's segment: a Pro Max key holds all three, and each segment has its own allowance.
+  if (segment) url.searchParams.set('segment', segment);
 
   const started = Date.now();
   let res;
@@ -48,15 +50,15 @@ export async function fetchCatalogPage(apiKey, { page = 1, search = '' } = {}) {
 }
 
 // Follows pagination (Free plans get 50 products per page).
-export async function fetchFullCatalog(apiKey) {
-  const first = await fetchCatalogPage(apiKey);
+export async function fetchFullCatalog(apiKey, { segment = '' } = {}) {
+  const first = await fetchCatalogPage(apiKey, { segment });
   const products = [...(first.body.products || [])];
   let pagination = first.body.meta?.pagination;
   let pages = 1;
   let quotaMessage = first.body.meta?.quotaMessage || null;
   // When the monthly product allowance runs out mid-sync, keep what arrived and stop.
   while (pagination?.hasNextPage && !quotaMessage && pages < MAX_PAGES) {
-    const next = await fetchCatalogPage(apiKey, { page: pagination.nextPage });
+    const next = await fetchCatalogPage(apiKey, { page: pagination.nextPage, segment });
     products.push(...(next.body.products || []));
     pagination = next.body.meta?.pagination;
     quotaMessage = next.body.meta?.quotaMessage || null;

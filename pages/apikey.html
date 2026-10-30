@@ -12,9 +12,9 @@
     </div>
     <div class="card-body">
       <p class="help-text">
-        Each store has its own key in your <code>.env</code> file. Keys are never typed into or shown on this
-        website. Press <b>Test</b> to call <code>GET /daas/v1/catalog</code> with that store's key and see the
-        products linked to it.
+        One key in your <code>.env</code> file serves all three stores; each store gets only its segment's
+        products. The key is never typed into or shown on this website. Press <b>Test</b> to call
+        <code>GET /daas/v1/catalog?segment=…</code> for that store and see its products.
       </p>
 
       <div id="store-keys" class="store-keys"></div>
@@ -38,14 +38,14 @@
       <h2>Put the key in your code (.env)</h2>
     </div>
     <div class="card-body">
-      <p class="help-text">Run <code>npm run setup</code> once. It creates a <code>.env</code> file in the project folder (next to <code>package.json</code>). Open it and paste each key from <b>inventaapi.shop → Dashboard → API Keys</b> after the <code>=</code>:</p>
+      <p class="help-text">Run <code>npm run setup</code> once. It creates a <code>.env</code> file in the project folder (next to <code>package.json</code>). Open it and paste your key from <b>inventaapi.shop → Dashboard → API Keys</b> after the <code>=</code>:</p>
       <div class="code-block">
         <button class="btn btn-outline btn-sm copy-btn" onclick="copyEnv()">Copy</button>
         <pre id="env-snippet"></pre>
       </div>
 
       <ol class="steps">
-        <li>Paste the three keys and save the file. A store without a key just stays empty.</li>
+        <li>Paste the key and save the file.</li>
         <li>Restart the server: stop it (<code>Ctrl + C</code>) and run <code>npm run dev</code> again.</li>
         <li>Press <b>Re-check .env</b>, then <b>Test</b> on each store.</li>
         <li>Pick a store at the top, then go to <b>Products → Sync from API</b>.</li>
@@ -54,8 +54,8 @@
 
       <p class="help-text" style="margin-top:14px;">Calling the API from your own code:</p>
       <div class="code-block">
-        <pre>const res = await fetch(`${process.env.INVENTA_API_URL}/daas/v1/catalog`, {
-  headers: { 'x-api-key': process.env.INVENTA_API_KEY_GROCERY },
+        <pre>const res = await fetch(`${process.env.INVENTA_API_URL}/daas/v1/catalog?segment=Grocery`, {
+  headers: { 'x-api-key': process.env.INVENTA_API_KEY },
 });
 const { products, meta } = await res.json();</pre>
       </div>

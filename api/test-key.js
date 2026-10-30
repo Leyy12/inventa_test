@@ -17,7 +17,7 @@ export default route({
 
     const log = { key_hint: `${shop.id}: ${keyHint(key)}`, search: search || null };
     try {
-      const { body: data, latencyMs, statusCode } = await fetchCatalogPage(key, { search });
+      const { body: data, latencyMs, statusCode } = await fetchCatalogPage(key, { search, segment: shop.segment });
       const meta = data.meta || {};
       const products = data.products || [];
       await store().logKeyTest({ ...log, status_code: statusCode, ok: true, latency_ms: latencyMs,

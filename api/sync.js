@@ -11,7 +11,7 @@ export default route({
   POST: async req => {
     const shop = resolveStore(req);
     const key = resolveKey(shop);
-    const catalog = await fetchFullCatalog(key);
+    const catalog = await fetchFullCatalog(key, { segment: shop.segment });
     const items = toPosItems(catalog.products, shop.id);
     await store().syncProducts(shop.id, items);
     return {
