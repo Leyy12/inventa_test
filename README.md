@@ -2,7 +2,7 @@
 
 A point-of-sale app for testing **InventaAPI** keys from [inventaapi.shop](https://inventaapi.shop). It has three stores (**Grocery**, **Pharmacy**, **Hardware**) that share **one** InventaAPI key (Pro Max). Each store gets only its segment's products and keeps its own prices, stock and sales. Switch stores with the selector at the top.
 
-- **API Key page**: tests the key from your `.env` file for each store and shows whether it works (key name, plan, requests used this month, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
+- **API Key page**: tests the key from your `.env` file for each store and shows whether it works (key name, plan, products used this month, response time) and the exact products linked to it. If it fails, the page explains why: wrong or revoked key, quota used up, and so on.
 - **Products**: press **Sync from API** to load every product on the key (all pages, one item per variant). Then set a selling price and stock for each item. InventaAPI does not send prices, so the POS keeps them.
 - **Cashier / Transactions / Dashboard**: sell, print receipts, export CSV. Prices and stock are checked on the server, not in the browser.
 - Data is stored in **Supabase**. The site runs on **Vercel**.
@@ -77,7 +77,7 @@ GET {INVENTA_API_URL}/daas/v1/catalog?segment=Grocery|Pharmacy|Hardware&page=N
 x-api-key: {INVENTA_API_KEY}
 ```
 
-Each store asks only for its own segment. On Pro (15,000 a month) and Pro Max (20,000 a month), every API call counts as one request, however many products it returns: a key test is one request, and a sync is one request per page. If the allowance runs out, InventaAPI answers 429 and the POS shows its message. Full rules: InventaAPI's Documentation page (inventaapi.shop → Documentation).
+Each store asks only for its own segment. On Pro (15,000 a month) and Pro Max (20,000 a month, shared by the three segments), every product variant the API sends counts as one (a product without variants counts as one): a sync or key test uses one per variant it receives. If the allowance runs out mid-sync, the POS keeps what arrived and shows InventaAPI's message. Full rules: InventaAPI's Documentation page (inventaapi.shop → Documentation).
 
 ## Files
 
