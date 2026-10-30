@@ -13,10 +13,10 @@
 
     <!-- Logo -->
     <div class="sidebar-logo">
-      <div class="sidebar-logo-icon">🛒</div>
+      <div class="sidebar-logo-icon" id="store-icon">🛒</div>
       <div class="sidebar-logo-text">
         <span class="logo-name">QuickPOS</span>
-        <span class="logo-sub">InventaAPI Test POS</span>
+        <span class="logo-sub" id="store-name">InventaAPI Test POS</span>
       </div>
       <button class="sidebar-toggle" id="sidebar-toggle" title="Collapse sidebar">&#8249;</button>
     </div>
@@ -108,6 +108,7 @@
       </div>
       <div class="topbar-right">
         <span class="topbar-date" id="topbar-date"></span>
+        <select class="form-control store-select" id="store-select" aria-label="Store" onchange="onStoreChange(this.value)"></select>
         <div class="store-status" id="conn-status">
           <span class="status-dot"></span>
           <span>Connecting…</span>

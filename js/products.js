@@ -16,14 +16,15 @@ function renderSyncBanner(result) {
   const s = State.status;
   if (result) {
     el.className = 'sync-banner ok';
-    el.innerHTML = `✅ Synced <b>${result.items}</b> item(s) from <b>${result.products}</b> product(s) on key
+    el.innerHTML = `✅ ${esc(State.currentStore().label)}: synced <b>${result.items}</b> item(s) from <b>${result.products}</b> product(s) on key
       <b>${esc(result.keyName || result.keyHint)}</b>${result.plan ? ` (${esc(result.plan)} plan)` : ''}.
       ${result.items ? 'Set a price for new items before selling them.' : esc(result.message || 'No products are linked to this key.')}`;
     return;
   }
-  if (s && !s.envKeySet) {
+  const cur = State.currentStore();
+  if (s && !cur.keySet) {
     el.className = 'sync-banner warn';
-    el.innerHTML = 'No API key yet. Add <code>INVENTA_API_KEY</code> to your <code>.env</code> file and restart the server. See the <a href="#apikey">API Key</a> page.';
+    el.innerHTML = `No ${esc(cur.label)} API key yet. Add <code>${esc(cur.env)}</code> to your <code>.env</code> file and restart the server. See the <a href="#apikey">API Key</a> page.`;
     return;
   }
   const last = State.products.reduce((m, p) => (p.synced_at && p.synced_at > m ? p.synced_at : m), '');

@@ -7,17 +7,17 @@
   <!-- Test the key from .env -->
   <div class="card">
     <div class="card-header">
-      <h2>Test your InventaAPI key</h2>
+      <h2>Test your InventaAPI keys</h2>
       <span class="badge badge-gray" id="key-endpoint"></span>
     </div>
     <div class="card-body">
       <p class="help-text">
-        The key is read from <code>INVENTA_API_KEY</code> in your <code>.env</code> file. It is never typed into
-        or shown on this website. Press <b>Test key</b> to call <code>GET /daas/v1/catalog</code> and see the
+        Each store has its own key in your <code>.env</code> file. Keys are never typed into or shown on this
+        website. Press <b>Test</b> to call <code>GET /daas/v1/catalog</code> with that store's key and see the
         products linked to it.
       </p>
 
-      <div id="key-current" class="key-current"></div>
+      <div id="store-keys" class="store-keys"></div>
 
       <div class="form-group">
         <label for="key-search">Search (optional)</label>
@@ -25,7 +25,6 @@
       </div>
 
       <div class="key-actions">
-        <button class="btn btn-primary" id="key-test-btn" onclick="testKey()">▶ Test key</button>
         <button class="btn btn-outline" onclick="recheckKey()" title="Check again after editing .env">⟳ Re-check .env</button>
       </div>
 
@@ -39,24 +38,24 @@
       <h2>Put the key in your code (.env)</h2>
     </div>
     <div class="card-body">
-      <p class="help-text">Create a file named <code>.env</code> in the project folder (next to <code>package.json</code>) and paste your key from <b>inventaapi.shop → Dashboard → API Keys</b>:</p>
+      <p class="help-text">Run <code>npm run setup</code> once. It creates a <code>.env</code> file in the project folder (next to <code>package.json</code>). Open it and paste each key from <b>inventaapi.shop → Dashboard → API Keys</b> after the <code>=</code>:</p>
       <div class="code-block">
         <button class="btn btn-outline btn-sm copy-btn" onclick="copyEnv()">Copy</button>
         <pre id="env-snippet"></pre>
       </div>
 
       <ol class="steps">
-        <li>Replace <code>paste-your-inventa-api-key-here</code> with your key and save the file.</li>
+        <li>Paste the three keys and save the file. A store without a key just stays empty.</li>
         <li>Restart the server: stop it (<code>Ctrl + C</code>) and run <code>npm run dev</code> again.</li>
-        <li>Press <b>Re-check .env</b>, then <b>Test key</b>.</li>
-        <li>Go to <b>Products → Sync from API</b>. The POS now sells exactly the products on that key.</li>
-        <li>On Vercel: add <code>INVENTA_API_KEY</code> under <b>Project → Settings → Environment Variables</b>, then redeploy.</li>
+        <li>Press <b>Re-check .env</b>, then <b>Test</b> on each store.</li>
+        <li>Pick a store at the top, then go to <b>Products → Sync from API</b>.</li>
+        <li>On Vercel: <b>Project → Settings → Environment Variables → Import .env</b>, choose your <code>.env</code> file, save, then redeploy.</li>
       </ol>
 
       <p class="help-text" style="margin-top:14px;">Calling the API from your own code:</p>
       <div class="code-block">
         <pre>const res = await fetch(`${process.env.INVENTA_API_URL}/daas/v1/catalog`, {
-  headers: { 'x-api-key': process.env.INVENTA_API_KEY },
+  headers: { 'x-api-key': process.env.INVENTA_API_KEY_GROCERY },
 });
 const { products, meta } = await res.json();</pre>
       </div>
@@ -70,7 +69,7 @@ const { products, meta } = await res.json();</pre>
 <!-- Products returned -->
 <div class="card" id="key-products-card" style="display:none;">
   <div class="card-header">
-    <h2>Products on this key</h2>
+    <h2 id="key-products-title">Products on this key</h2>
     <span id="key-products-count" style="font-size:12px; color:var(--text-xs);"></span>
   </div>
   <table>

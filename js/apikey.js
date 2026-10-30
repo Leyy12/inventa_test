@@ -1,26 +1,30 @@
 /* ============================================================
-   APIKEY.JS  –  Test the .env InventaAPI key and show its products
+   APIKEY.JS  –  Test each store's InventaAPI key (from .env)
    ============================================================ */
 
 function loadApiKey() {
   const s = State.status;
   if (s) document.getElementById('key-endpoint').textContent = s.inventaUrl.replace(/^https?:\/\//, '') + '/daas/v1/catalog';
-  renderCurrentKey();
+  renderStoreKeys();
   renderEnvSnippet();
   renderServerConfig();
-  document.getElementById('key-search')?.addEventListener('keydown', e => { if (e.key === 'Enter') testKey(); });
+  document.getElementById('key-search')?.addEventListener('keydown', e => { if (e.key === 'Enter') testKey(State.store); });
 }
 
-function renderCurrentKey() {
-  const el = document.getElementById('key-current');
-  const s = State.status;
-  if (!el || !s) return;
-  el.className = 'key-current ' + (s.envKeySet ? 'ok' : 'warn');
-  el.innerHTML = s.envKeySet
-    ? `🔑 Key found in .env: <b class="mono">${esc(s.envKeyHint)}</b>`
-    : '⚠️ No key found. Add <code>INVENTA_API_KEY</code> to your <code>.env</code> file (see the steps on the right) and restart the server.';
-  const btn = document.getElementById('key-test-btn');
-  if (btn) btn.disabled = !s.envKeySet;
+function renderStoreKeys() {
+  const el = document.getElementById('store-keys');
+  if (!el || !State.status) return;
+  el.innerHTML = State.status.stores.map(st => `
+    <div class="store-key ${st.id === State.store ? 'current' : ''}">
+      <span class="store-key-icon">${esc(st.icon)}</span>
+      <div class="store-key-info">
+        <b>${esc(st.label)}</b>
+        ${st.keySet ? `<span class="badge badge-success">key found · <span class="mono">${esc(st.keyHint)}</span></span>`
+                    : '<span class="badge badge-warning">no key yet</span>'}
+        <div class="env">${esc(st.env)}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" data-store="${esc(st.id)}" onclick="testKey(this.dataset.store)" ${st.keySet ? '' : 'disabled'}>▶ Test</button>
+    </div>`).join('');
 }
 
 async function recheckKey() {
@@ -28,8 +32,9 @@ async function recheckKey() {
     State.status = await api('status');
     renderConnection();
     loadApiKey();
-    showToast(State.status.envKeySet ? 'Key found in .env.' : 'Still no key. Did you save .env and restart the server?',
-      State.status.envKeySet ? 'success' : 'error');
+    const found = State.status.stores.filter(s => s.keySet).map(s => s.label);
+    showToast(found.length ? `Keys found: ${found.join(', ')}.` : 'No keys yet. Did you save .env and restart the server?',
+      found.length ? 'success' : 'error');
   } catch (err) {
     showToast(err.message, 'error');
   }
@@ -39,7 +44,10 @@ function renderEnvSnippet() {
   const el = document.getElementById('env-snippet');
   if (!el) return;
   const url = State.status?.inventaUrl || 'https://inventaapi.shop';
-  el.textContent = `INVENTA_API_KEY=paste-your-inventa-api-key-here\nINVENTA_API_URL=${url}`;
+  el.textContent = 'INVENTA_API_KEY_GROCERY=paste-grocery-key-here\n'
+    + 'INVENTA_API_KEY_PHARMACY=paste-pharmacy-key-here\n'
+    + 'INVENTA_API_KEY_HARDWARE=paste-hardware-key-here\n'
+    + `INVENTA_API_URL=${url}`;
 }
 
 function renderServerConfig() {
@@ -47,10 +55,10 @@ function renderServerConfig() {
   const s = State.status;
   if (!el || !s) return;
   const row = (label, ok, text) =>
-    `<div class="cfg-row"><span>${label}</span><span class="badge ${ok ? 'badge-success' : 'badge-warning'}">${esc(text)}</span></div>`;
+    `<div class="cfg-row"><span>${esc(label)}</span><span class="badge ${ok ? 'badge-success' : 'badge-warning'}">${esc(text)}</span></div>`;
   el.innerHTML = `
     <p class="help-text" style="margin:14px 0 6px;"><b>This server right now</b></p>
-    ${row('INVENTA_API_KEY', s.envKeySet, s.envKeySet ? 'set · ' + s.envKeyHint : 'not set')}
+    ${s.stores.map(st => row(st.env, st.keySet, st.keySet ? 'set · ' + st.keyHint : 'not set')).join('')}
     ${row('INVENTA_API_URL', true, s.inventaUrl)}
     ${row('Storage', s.storage === 'supabase', s.storage === 'supabase' ? 'Supabase' : 'local file (no Supabase)')}
   `;
@@ -66,52 +74,53 @@ async function copyEnv() {
   }
 }
 
-async function testKey() {
-  const btn = document.getElementById('key-test-btn');
+async function testKey(storeId) {
+  const st = State.status?.stores.find(s => s.id === storeId);
+  if (!st?.keySet) return;
+  const btn = document.querySelector(`.store-key button[data-store="${storeId}"]`);
   const out = document.getElementById('key-result');
   const search = document.getElementById('key-search').value.trim();
 
-  btn.disabled = true;
-  btn.textContent = 'Testing…';
+  if (btn) { btn.disabled = true; btn.textContent = 'Testing…'; }
   out.innerHTML = '';
   document.getElementById('key-products-card').style.display = 'none';
 
   try {
-    const r = await api('test-key', { method: 'POST', body: { search } });
+    const r = await api('test-key', { method: 'POST', body: { search }, store: storeId });
     const quota = r.quota ? `${r.quota.used ?? '?'} / ${r.quota.limit ?? '∞'}` : '—';
     out.innerHTML = `
       <div class="result-box ok">
-        <div class="result-title">✅ Key works</div>
+        <div class="result-title">✅ ${esc(st.label)} key works</div>
         <div class="result-grid">
           <div><span>Key</span><b>${esc(r.keyName || '—')}</b></div>
           <div><span>Plan</span><b>${esc(r.plan || '—')}</b></div>
           <div><span>Products</span><b>${r.total}</b></div>
           <div><span>Response</span><b>${r.statusCode} · ${r.latencyMs} ms</b></div>
           <div><span>Requests used</span><b>${esc(quota)}</b></div>
-          <div><span>Tested</span><b>.env key ${esc(r.keyHint)}</b></div>
+          <div><span>Tested</span><b class="mono">${esc(r.keyHint)}</b></div>
         </div>
         ${r.message ? `<p class="result-note">${esc(r.message)}</p>` : ''}
         ${r.pagination?.hasNextPage ? `<p class="result-note">Showing page 1 of ${r.pagination.totalPages}. Sync loads every page.</p>` : ''}
       </div>`;
-    renderKeyProducts(r.items, r.total);
+    renderKeyProducts(st, r.items, r.total);
   } catch (err) {
     const d = err.data || {};
     out.innerHTML = `
       <div class="result-box bad">
-        <div class="result-title">❌ ${esc(err.message)}</div>
+        <div class="result-title">❌ ${esc(st.label)}: ${esc(err.message)}</div>
         ${d.hint ? `<p class="result-note">${esc(d.hint)}</p>` : ''}
         <p class="result-note mono">${d.code ? esc(d.code) + ' · ' : ''}HTTP ${esc(d.statusCode ?? err.status ?? '?')}${d.latencyMs != null ? ' · ' + d.latencyMs + ' ms' : ''}</p>
       </div>`;
   } finally {
-    btn.disabled = !State.status?.envKeySet;
-    btn.textContent = '▶ Test key';
+    if (btn) { btn.disabled = false; btn.textContent = '▶ Test'; }
   }
 }
 
-function renderKeyProducts(items, total) {
+function renderKeyProducts(st, items, total) {
   const card = document.getElementById('key-products-card');
   const body = document.getElementById('key-products-body');
   card.style.display = '';
+  document.getElementById('key-products-title').textContent = `Products on the ${st.label} key`;
   document.getElementById('key-products-count').textContent =
     `${items.length} item${items.length !== 1 ? 's' : ''} (variants) · ${total} product${total !== 1 ? 's' : ''}`;
   if (items.length === 0) {

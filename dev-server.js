@@ -55,6 +55,9 @@ const server = http.createServer(async (req, res) => {
 const port = Number(process.env.PORT) || 3000;
 server.listen(port, () => {
   console.log(`QuickPOS running at http://localhost:${port}`);
-  console.log(envFound ? 'Loaded settings from .env' : 'No .env found — copy .env.example to .env and add your API key.');
-  console.log(`InventaAPI key: ${process.env.INVENTA_API_KEY ? 'set' : 'NOT set'} · Storage: ${process.env.SUPABASE_URL ? 'Supabase' : 'local file (.data/)'}`);
+  console.log(envFound ? 'Loaded settings from .env' : 'No .env found — run `npm run setup`, then paste your API keys into .env.');
+  for (const [label, name] of [['Grocery', 'INVENTA_API_KEY_GROCERY'], ['Pharmacy', 'INVENTA_API_KEY_PHARMACY'], ['Hardware', 'INVENTA_API_KEY_HARDWARE']]) {
+    console.log(`  ${label.padEnd(9)} key: ${process.env[name] ? 'set' : 'NOT set'}`);
+  }
+  console.log(`  Storage: ${process.env.SUPABASE_URL ? 'Supabase' : 'local file (.data/)'}`);
 });

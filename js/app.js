@@ -5,14 +5,16 @@
    ============================================================ */
 
 // ── API client ──────────────────────────────────────────
-// The InventaAPI key is never handled here: the server reads it from .env.
-async function api(path, { method = 'GET', body } = {}) {
+// The InventaAPI keys are never handled here: the server reads them from .env.
+// Every call says which store it is for (?store=grocery|pharmacy|hardware).
+async function api(path, { method = 'GET', body, store = State.store } = {}) {
   const headers = { Accept: 'application/json' };
   if (body !== undefined) headers['Content-Type'] = 'application/json';
+  const url = '/api/' + path + (path.includes('?') ? '&' : '?') + 'store=' + encodeURIComponent(store);
 
   let res;
   try {
-    res = await fetch('/api/' + path, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
+    res = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body) });
   } catch {
     throw Object.assign(new Error('Cannot reach the POS server. Is `npm run dev` running?'), { data: {} });
   }
@@ -23,7 +25,10 @@ async function api(path, { method = 'GET', body } = {}) {
 }
 
 // ── State ──────────────────────────────────────────────────
+const STORE_PREF = 'quickpos_store';
+
 const State = {
+  store: (() => { try { return localStorage.getItem(STORE_PREF) || 'grocery'; } catch { return 'grocery'; } })(),
   status: null,
   products: [],
   transactions: [],
@@ -36,6 +41,17 @@ const State = {
     this.transactions = t.transactions;   // newest first
     this.loaded = true;
     renderConnection();
+  },
+
+  async switchStore(id) {
+    this.store = id;
+    try { localStorage.setItem(STORE_PREF, id); } catch { /* private mode */ }
+    if (typeof cart !== 'undefined') cart = [];
+    await this.refresh();
+  },
+
+  currentStore() {
+    return this.status?.stores.find(s => s.id === this.store) || { id: this.store, label: this.store, icon: '🏪' };
   },
 
   async sync() {
@@ -91,17 +107,37 @@ function showToast(msg, type = '') {
   t._timer = setTimeout(() => { t.className = ''; }, 3200);
 }
 
-// Connection badge in the top bar
+// Store switcher and key status in the top bar
 function renderConnection() {
   const el = document.getElementById('conn-status');
+  const sel = document.getElementById('store-select');
   if (!el || !State.status) return;
   const s = State.status;
-  const keyText = s.envKeySet ? `Key ${s.envKeyHint} (.env)` : 'No API key in .env';
+  if (!s.stores.some(x => x.id === State.store)) State.store = 'grocery';
+
+  if (sel) {
+    sel.innerHTML = s.stores.map(x => `<option value="${esc(x.id)}">${esc(x.icon + ' ' + x.label)}</option>`).join('');
+    sel.value = State.store;
+  }
+  const cur = State.currentStore();
+  document.getElementById('store-name').textContent = cur.label + ' Store';
+  document.getElementById('store-icon').textContent = cur.icon;
+
+  const keyText = cur.keySet ? `Key ${cur.keyHint}` : `No ${cur.label} key in .env`;
   const storeText = s.storage === 'supabase' ? 'Supabase' : 'Local file';
-  const ok = s.envKeySet;
-  el.className = 'store-status' + (ok ? '' : ' warn');
+  el.className = 'store-status' + (cur.keySet ? '' : ' warn');
   el.innerHTML = `<span class="status-dot"></span><span>${esc(keyText)} · ${esc(storeText)}</span>`;
   el.title = `InventaAPI: ${s.inventaUrl}`;
+}
+
+async function onStoreChange(id) {
+  try {
+    await State.switchStore(id);
+    navigate(_currentPage || 'dashboard');
+    showToast(`Switched to ${State.currentStore().label}.`, 'success');
+  } catch (err) {
+    showToast(err.message, 'error');
+  }
 }
 
 // ── Router ─────────────────────────────────────────────────

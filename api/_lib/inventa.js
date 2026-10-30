@@ -15,7 +15,7 @@ const HINTS = {
 
 export async function fetchCatalogPage(apiKey, { page = 1, search = '' } = {}) {
   const { inventaUrl } = config();
-  if (!apiKey) throw new HttpError(400, 'No API key found. Add INVENTA_API_KEY to your .env file and restart the server.');
+  if (!apiKey) throw new HttpError(400, 'No API key found in .env.');
 
   const url = new URL(`${inventaUrl}/daas/v1/catalog`);
   if (page > 1) url.searchParams.set('page', String(page));
@@ -65,7 +65,7 @@ function variantLabel(v) {
 }
 
 // One sellable POS item per variant (or one per product when it has no variants).
-export function toPosItems(products) {
+export function toPosItems(products, storeId = 'grocery') {
   const items = [];
   for (const p of products) {
     const variants = Array.isArray(p.variants) && p.variants.length ? p.variants : [null];
@@ -73,7 +73,7 @@ export function toPosItems(products) {
     variants.forEach((v, index) => {
       const vKey = v ? (v.sku || `${v.flavor || ''}|${v.size || ''}` || String(index)) : 'base';
       items.push({
-        id: `${p.id}::${vKey}`,
+        id: `${storeId}::${p.id}::${vKey}`,
         product_id: p.id,
         sku: v?.sku || p.sku || null,
         name: p.name,

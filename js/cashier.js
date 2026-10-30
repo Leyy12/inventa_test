@@ -209,7 +209,7 @@ async function checkout() {
 // ── Receipt ────────────────────────────────────────────────
 function showReceipt(txn) {
   document.getElementById('receipt-content').innerHTML = `
-    <div class="receipt-store">🛒 QuickPOS</div>
+    <div class="receipt-store">${esc(State.currentStore().icon + " QuickPOS " + State.currentStore().label)}</div>
     <div class="receipt-sub">Official Receipt</div>
     <hr class="receipt-divider">
     <div class="receipt-meta">

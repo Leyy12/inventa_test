@@ -1,7 +1,8 @@
-// GET   /api/products                              — POS products (synced from the API key)
+// GET   /api/products?store=grocery                 — the store's products (synced from its API key)
 // PATCH /api/products { id, price, stock, threshold } — set selling price and stock
 import { route, readJson, HttpError } from './_lib/http.js';
 import { store } from './_lib/store.js';
+import { resolveStore } from './_lib/key.js';
 
 function number(value, name, { integer = false } = {}) {
   const n = Number(value);
@@ -12,7 +13,7 @@ function number(value, name, { integer = false } = {}) {
 }
 
 export default route({
-  GET: async () => ({ products: await store().listProducts() }),
+  GET: async req => ({ products: await store().listProducts(resolveStore(req).id) }),
   PATCH: async req => {
     const body = await readJson(req);
     if (typeof body.id !== 'string' || !body.id) throw new HttpError(400, 'Missing product id.');

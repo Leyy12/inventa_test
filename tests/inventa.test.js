@@ -7,11 +7,11 @@ test('one POS item per variant, one per product without variants', () => {
   const items = toPosItems([
     { id: 'p1', name: 'Juice', category: 'Beverages', variants: [{ sku: 'J1', flavor: 'Mango', size: '1L' }, { sku: 'J2', flavor: 'Apple', size: '1L' }] },
     { id: 'p2', name: 'Soap', size: '90g', variants: [] },
-  ]);
+  ], 'pharmacy');
   assert.deepEqual(items.map(i => [i.id, i.variant, i.sku]), [
-    ['p1::J1', 'Mango · 1L', 'J1'],
-    ['p1::J2', 'Apple · 1L', 'J2'],
-    ['p2::base', '90g', null],
+    ['pharmacy::p1::J1', 'Mango · 1L', 'J1'],
+    ['pharmacy::p1::J2', 'Apple · 1L', 'J2'],
+    ['pharmacy::p2::base', '90g', null],
   ]);
 });
 

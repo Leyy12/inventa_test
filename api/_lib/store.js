@@ -12,18 +12,18 @@ const normTxn = t => ({ ...t, subtotal: num(t.subtotal), discount: num(t.discoun
 
 const supabaseStore = {
   kind: 'supabase',
-  async listProducts() {
-    return (await db.select('pos_products', 'select=*&active=is.true&order=name.asc,variant.asc')).map(normProduct);
+  async listProducts(storeId) {
+    return (await db.select('pos_products', `select=*&store=eq.${storeId}&active=is.true&order=name.asc,variant.asc`)).map(normProduct);
   },
-  async syncProducts(items) { return db.rpc('pos_sync_products', { p_items: items }); },
+  async syncProducts(storeId, items) { return db.rpc('pos_sync_products', { p_store: storeId, p_items: items }); },
   async updateProduct(id, { price, stock, threshold }) {
     return normProduct(await db.rpc('pos_update_product', { p_id: id, p_price: price, p_stock: stock, p_threshold: threshold }));
   },
-  async checkout(items, discount, cash) {
-    return normTxn(await db.rpc('pos_checkout', { p_items: items, p_discount: discount, p_cash: cash }));
+  async checkout(storeId, items, discount, cash) {
+    return normTxn(await db.rpc('pos_checkout', { p_store: storeId, p_items: items, p_discount: discount, p_cash: cash }));
   },
-  async listTransactions(limit) {
-    return (await db.select('pos_transactions', `select=*&order=created_at.desc&limit=${limit}`)).map(normTxn);
+  async listTransactions(storeId, limit) {
+    return (await db.select('pos_transactions', `select=*&store=eq.${storeId}&order=created_at.desc&limit=${limit}`)).map(normTxn);
   },
   async logKeyTest(row) {
     try { await db.rpc('pos_log_key_test', { p: row }); } catch (err) { console.warn('[log] key test not saved:', err.message); }
@@ -47,18 +47,18 @@ const round2 = n => Math.round(n * 100) / 100;
 
 const fileStore = {
   kind: 'local-file',
-  async listProducts() {
-    return load().products.filter(p => p.active)
+  async listProducts(storeId) {
+    return load().products.filter(p => p.active && p.store === storeId)
       .sort((a, b) => a.name.localeCompare(b.name) || String(a.variant || '').localeCompare(String(b.variant || '')));
   },
-  async syncProducts(items) {
+  async syncProducts(storeId, items) {
     const data = load();
     const byId = new Map(data.products.map(p => [p.id, p]));
     const now = new Date().toISOString();
-    for (const p of data.products) p.active = false;
+    for (const p of data.products) if (p.store === storeId) p.active = false;
     for (const item of items) {
       const prev = byId.get(item.id);
-      const row = { price: 0, stock: 0, threshold: 5, ...prev, ...item, active: true, synced_at: now, updated_at: now };
+      const row = { price: 0, stock: 0, threshold: 5, ...prev, ...item, store: storeId, active: true, synced_at: now, updated_at: now };
       if (prev) Object.assign(prev, row); else data.products.push(row);
     }
     save(data);
@@ -72,12 +72,12 @@ const fileStore = {
     save(data);
     return p;
   },
-  async checkout(items, discount, cash) {
+  async checkout(storeId, items, discount, cash) {
     const data = load();
     const lines = [];
     let subtotal = 0;
     for (const line of items) {
-      const p = data.products.find(x => x.id === line.id && x.active);
+      const p = data.products.find(x => x.id === line.id && x.active && x.store === storeId);
       if (!p) throw new HttpError(400, 'A product in the cart is no longer available.');
       if (p.stock < line.qty) throw new HttpError(400, `Not enough stock for ${p.name}.`);
       subtotal += p.price * line.qty;
@@ -89,7 +89,7 @@ const fileStore = {
     if (paid < total) throw new HttpError(400, 'Cash is less than total.');
     for (const { p, qty } of lines) p.stock -= qty;
     const txn = {
-      id: data.nextId++, created_at: new Date().toISOString(), status: 'Paid',
+      id: data.nextId++, store: storeId, created_at: new Date().toISOString(), status: 'Paid',
       items: lines.map(({ p, qty }) => ({ id: p.id, name: p.name + (p.variant ? ` – ${p.variant}` : ''), sku: p.sku, price: p.price, qty })),
       subtotal: round2(subtotal), discount: round2(disc), total: round2(total), cash: round2(paid), change: round2(paid - total),
     };
@@ -97,7 +97,7 @@ const fileStore = {
     save(data);
     return txn;
   },
-  async listTransactions(limit) { return load().transactions.slice(0, limit); },
+  async listTransactions(storeId, limit) { return load().transactions.filter(t => t.store === storeId).slice(0, limit); },
   async logKeyTest() {},
 };
 
