@@ -2,8 +2,8 @@
 import { config } from './config.js';
 import { HttpError } from './http.js';
 
-// Paid InventaAPI plans count every product delivered (15,000 a month), so a sync
-// uses as many as the key has. Stop after this many pages as a safety net.
+// Paid InventaAPI plans count every product variant delivered (15,000 a month), so a
+// sync uses as many as the key has. Stop after this many pages as a safety net.
 const MAX_PAGES = 20;
 
 // Plain-language explanations for the errors InventaAPI returns.
