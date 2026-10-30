@@ -94,7 +94,7 @@ async function testKey(storeId) {
           <div><span>Plan</span><b>${esc(r.plan || '—')}</b></div>
           <div><span>Products</span><b>${r.total}</b></div>
           <div><span>Response</span><b>${r.statusCode} · ${r.latencyMs} ms</b></div>
-          <div><span>Requests used this month</span><b>${esc(quota)}</b></div>
+          <div><span>Products used this month</span><b>${esc(quota)}</b></div>
           <div><span>Tested</span><b class="mono">${esc(r.keyHint)}</b></div>
         </div>
         ${r.message ? `<p class="result-note">${esc(r.message)}</p>` : ''}
