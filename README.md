@@ -9,7 +9,7 @@ A point-of-sale app for testing **InventaAPI** keys from [inventaapi.shop](https
 
 ## Run it on your computer
 
-Requires Node.js 18 or newer. Nothing to install: there are no dependencies.
+Requires Node.js 22 (18 or newer works locally). Nothing to install: there are no dependencies.
 
 ```bash
 npm run setup
@@ -43,20 +43,32 @@ The key is only ever read from `.env`. The website never asks for it or shows it
 | `SUPABASE_URL` | for Supabase | Supabase → Project Settings → API. |
 | `SUPABASE_PUBLISHABLE_KEY` | for Supabase | The `sb_publishable_…` key. (`SUPABASE_SECRET_KEY` also works.) |
 
-## Put your keys on Vercel
+## Put your key on Vercel
 
-Vercel can't read the `.env` on your computer, and `.env` is never uploaded to GitHub. Upload it once:
+The live site is https://inventa-test-pos.vercel.app (Vercel project **inventa-test-pos**). Vercel can't read the `.env` on your computer, and `.env` is never uploaded to GitHub, so add the key there once:
 
 1. Vercel → **inventa-test-pos** → **Settings** → **Environment Variables**.
-2. Click **Import .env** and choose your `.env` file. Or open `.env`, copy everything, and paste it into the first **Key** box; Vercel splits it into rows.
-3. Tick Production, Preview and Development, then **Save**.
+2. Add `INVENTA_API_KEY` with your key, or click **Import .env** and choose your `.env` file. (`SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY` and `INVENTA_API_URL` are already there.)
+3. Tick Production and Preview, then **Save**.
 4. **Deployments** → ⋯ on the latest one → **Redeploy**.
 
-Do this again whenever you change a key.
+Do this again whenever you change the key.
+
+## Moving from three keys to one
+
+Before InventaAPI Pro Max had one key, this POS used `INVENTA_API_KEY_GROCERY`, `_PHARMACY` and `_HARDWARE`. To switch:
+
+1. In `.env` (and on Vercel), rename `INVENTA_API_KEY_GROCERY` to `INVENTA_API_KEY`. That key is now your "Pro Max API key" and holds all three segments.
+2. Delete the `_PHARMACY` and `_HARDWARE` lines; those keys were revoked.
+3. Restart `npm run dev` (or redeploy on Vercel). The terminal shows "InventaAPI key: set (used by all three stores)".
+
+## Using it on another computer
+
+Run `git pull` on `main`, then `npm run setup` and paste the key into the new `.env` (or copy `.env` from the other computer). `.env` never comes through git.
 
 ## Supabase
 
-The tables are in `supabase/migrations/20261030000000_pos.sql`: `pos_products`, `pos_transactions` and the key-test log `test_web_runs`. Every name starts with `pos_`, so nothing collides with InventaAPI's own tables. The publishable key can only **read** these tables. Writes go through database functions (`pos_sync_products`, `pos_update_product`, `pos_checkout`) that validate input and take prices from the database.
+The tables are in `supabase/migrations/`: `20261030000000_pos.sql` creates `pos_products`, `pos_transactions` and the key-test log `test_web_runs`; `20261030010000_pos_stores.sql` adds the `store` column (grocery, pharmacy, hardware) so each store keeps its own products, stock and sales. Both are already applied to the Supabase project. Every name starts with `pos_`, so nothing collides with InventaAPI's own tables. The publishable key can only **read** these tables. Writes go through database functions (`pos_sync_products`, `pos_update_product`, `pos_checkout`) that validate input and take prices from the database.
 
 ## How it talks to InventaAPI
 
@@ -65,7 +77,7 @@ GET {INVENTA_API_URL}/daas/v1/catalog?segment=Grocery|Pharmacy|Hardware&page=N
 x-api-key: {INVENTA_API_KEY}
 ```
 
-Each store asks only for its own segment. On Pro and Pro Max, every product variant the API sends counts toward the month's 15,000 for that product's segment (a product without variants counts as one). A sync uses one per variant on the key, and so does a key test.
+Each store asks only for its own segment. On Pro and Pro Max, every product variant the API sends counts toward the month's 15,000 for that product's segment (a product without variants counts as one). A sync uses one per variant in that store's segment, and so does a key test. If the allowance runs out mid-sync, the POS keeps what arrived and shows InventaAPI's message. Full rules: InventaAPI's Documentation page (inventaapi.shop → Documentation).
 
 ## Files
 
@@ -73,5 +85,7 @@ Each store asks only for its own segment. On Pro and Pro Max, every product vari
 index.html, pages/, js/, css/   the POS web app
 api/*.js                        server functions (Vercel); api/_lib/ is shared code
 dev-server.js                   local server: loads .env, serves the app and api/
+scripts/setup.js                `npm run setup`: creates .env from .env.example
+tests/                          `npm test`
 supabase/migrations/            database tables and functions
 ```
